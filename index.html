@@ -195,9 +195,9 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--vermelho);flex:no
 
 /* mesa livre */
 .mesa{flex:1;min-height:520px;display:flex;position:relative}
-.ferramentas{flex:0 0 74px;display:flex;flex-direction:column;gap:2px;padding:10px 7px;background:var(--painel);border-right:1px solid var(--linha);overflow:auto}
-.ferr{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border:0;border-radius:10px;background:transparent;color:var(--texto-2);font-size:11px;font-weight:500;touch-action:none;user-select:none}
-.ferr:hover{background:var(--cartao);color:var(--texto)}
+.ferramentas{flex:0 0 74px;display:flex;flex-direction:column;gap:2px;padding:10px 7px;background:#F4F2EE;border-right:1px solid #DCD7CD;overflow:auto;color-scheme:light}
+.ferr{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border:0;border-radius:10px;background:transparent;color:#3A383E;font-size:11px;font-weight:500;touch-action:none;user-select:none}
+.ferr:hover{background:#E6E2DA;color:var(--papel-tinta)}
 .ferr.ativa{background:var(--vermelho);color:#fff}
 .ferr svg{width:20px;height:20px}
 .mesa-rolagem{flex:1;min-width:0;overflow:auto;position:relative}
@@ -265,7 +265,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--vermelho);flex:no
   .estado-salvo{margin:0;padding:6px 10px;white-space:nowrap}.estado-salvo span{display:none}
   .topo,.barra-abas,.chapa{padding-left:max(16px,env(safe-area-inset-left,0px))}
   .mesa{flex-direction:column}
-  .ferramentas{flex:0 0 auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--linha)}
+  .ferramentas{flex:0 0 auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid #DCD7CD}
   .ferr{min-width:56px}
   .mesa-rolagem{min-height:440px}
   .take{grid-template-columns:auto minmax(0,1fr) auto;}
