@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FluxoEDITÁ</title>
+<meta name="description" content="Criação de conteúdo do Thiago Editá: blocos, vídeos, roteiro, gravação, edição e mesa livre.">
+<meta name="theme-color" content="#0E0E10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FluxoEDITÁ">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icones/icone-192.png">
+<link rel="apple-touch-icon" href="icones/icone-180.png">
+<style>
+@font-face{font-family:"Unbounded";src:url("fonts/Unbounded-Bold.ttf") format("truetype");font-weight:700;font-display:swap}
+@font-face{font-family:"Unbounded";src:url("fonts/Unbounded-ExtraBold.ttf") format("truetype");font-weight:800;font-display:swap}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+body{margin:0}
+/* Layout: casca escura de estúdio (lateral + topo) e, no meio, o painel de furinhos onde os cartões de papel ficam pregados. */
+:root{
+  --tinta:#0E0E10; --painel:#151518; --cartao:#1B1B1F; --cartao-2:#232327; --linha:#2A2A2F;
+  --texto:#F2F0EB; --texto-2:#C9C7CC; --texto-3:#8E8C93;
+  --vermelho:#E3122B; --vermelho-esc:#B80B20; --vermelho-claro:#FF6070;
+  --papel:#FBFAF7; --papel-2:#E6E2DA; --papel-tinta:#17171A; --papel-sub:#5E5B55;
+  --furo:#D6D1C8; --nota:#FFE9A8; --verde:#2FA36B; --laranja:#FF8A2A; --azul:#2F5FC4;
+  --f-titulo:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-texto:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--tinta);color:var(--texto);font:14px/1.45 var(--f-texto);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:var(--vermelho-claro)}
+.estado-salvo{text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--vermelho-claro);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.etq{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase}
+.pontos{background-color:var(--furo);background-image:radial-gradient(circle at 50% 50%,#8F8A80 0,#A7A196 1.6px,rgba(255,255,255,.55) 2.6px,transparent 3.2px),linear-gradient(180deg,rgba(255,255,255,.18),rgba(0,0,0,.05));background-size:26px 26px,100% 100%}
+
+/* casca */
+#app{display:grid;grid-template-columns:232px minmax(0,1fr);height:100%}
+#lado{background:var(--tinta);border-right:1px solid var(--linha);padding:20px 14px;display:flex;flex-direction:column;gap:18px;overflow:auto}
+.marca{display:flex;align-items:center;gap:10px;padding:0 6px;text-decoration:none;color:var(--texto)}
+.marca i{width:26px;height:26px;border-radius:7px;background:var(--vermelho);display:grid;place-items:center;flex:none}
+.marca i::after{content:"";width:10px;height:10px;border:2px solid var(--tinta);border-radius:2px}
+.marca b{font:800 16px var(--f-titulo);letter-spacing:-.4px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav .etq{color:var(--texto-3);padding:12px 8px 6px}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;color:var(--texto-2);text-decoration:none;min-height:40px}
+.nav a:hover{background:var(--cartao)}
+.nav a.ativo{background:var(--cartao);color:var(--texto);font-weight:600}
+.nav a .q{width:8px;height:8px;border-radius:2px;flex:none}
+.nav a span.n{margin-left:auto;font:500 12px var(--f-mono);color:var(--texto-3)}
+.estado-salvo{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--texto-3);padding:10px;border-radius:10px;background:var(--painel);border:1px solid var(--linha)}
+.estado-salvo i{width:8px;height:8px;border-radius:50%;background:var(--verde);flex:none}
+.estado-salvo.salvando i{background:var(--laranja)}
+.estado-salvo.erro i,.estado-salvo.teste i{background:var(--vermelho)}
+#principal{min-width:0;display:flex;flex-direction:column;height:100%;overflow:hidden}
+#vista{flex:1;min-height:0;display:flex;flex-direction:column;overflow:auto}
+
+/* topo de cada tela */
+.topo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px max(16px,env(safe-area-inset-right,0px)) 14px 24px;border-bottom:1px solid var(--linha);background:var(--tinta);position:sticky;top:0;z-index:5}
+.topo-esq{display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 320px}
+.voltar{width:40px;height:40px;border-radius:10px;background:var(--cartao);display:grid;place-items:center;color:var(--texto);text-decoration:none;flex:none}
+.trilha{font-size:12px;color:var(--texto-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trilha a{color:var(--texto-3);text-decoration:none}.trilha a:hover{color:var(--texto)}
+.titulo{font:700 22px/1.15 var(--f-titulo);letter-spacing:-.6px;margin:0;text-wrap:balance}
+input.titulo{background:transparent;border:1px solid transparent;border-radius:8px;padding:2px 6px;margin-left:-7px;width:100%;min-width:0}
+input.titulo:hover{border-color:var(--linha)}input.titulo:focus{border-color:var(--vermelho);outline:none;background:var(--painel)}
+.topo-dir{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{min-height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--linha);background:var(--cartao);color:var(--texto);font-weight:600;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn:hover{border-color:#3A3A40}
+.btn.prim{background:var(--vermelho);border-color:var(--vermelho);color:#fff}.btn.prim:hover{background:var(--vermelho-esc)}
+.btn.fantasma{background:transparent}
+.btn.perigo{color:var(--vermelho-claro)}
+.btn.peq{min-height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+select.sel{min-height:40px;border-radius:10px;border:1px solid var(--linha);background:var(--cartao);padding:0 10px}
+.abas{display:flex;gap:4px;padding:4px;background:var(--painel);border:1px solid var(--linha);border-radius:12px;flex-wrap:wrap}
+.abas a{padding:7px 12px;border-radius:9px;color:var(--texto-2);text-decoration:none;font-weight:500}
+.abas a.ativa{background:var(--vermelho);color:#fff;font-weight:600}
+.barra-abas{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px 24px;border-bottom:1px solid var(--linha)}
+
+/* superfície de furinhos */
+.chapa{flex:1;padding:26px max(16px,env(safe-area-inset-right,0px)) 40px 24px;color:var(--papel-tinta)}
+.chapa,.papel,.mesa-area,.cartao-it{color-scheme:light}
+.papel{background:var(--papel);color:var(--papel-tinta);border-radius:14px;box-shadow:0 2px 0 rgba(0,0,0,.06),0 12px 24px rgba(40,32,20,.2)}
+.vazio{max-width:520px;padding:22px;border-radius:14px;background:rgba(255,255,255,.45);border:2px dashed #8F8A80;color:#3A372F}
+.vazio h2{margin:0 0 6px;font:700 18px var(--f-titulo);letter-spacing:-.3px}
+.vazio p{margin:0}
+
+/* quadro geral */
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:28px 22px;align-items:start}
+.bloco-cartao{position:relative;display:flex;flex-direction:column;gap:12px;padding:18px;text-decoration:none}
+.bloco-cartao .prego{position:absolute;top:-7px;left:50%;width:14px;height:14px;margin-left:-7px;border-radius:50%;box-shadow:0 2px 3px rgba(0,0,0,.35)}
+.bloco-cartao h2{margin:0;font:700 21px var(--f-titulo);letter-spacing:-.5px;text-wrap:balance;overflow-wrap:anywhere}
+.bloco-cartao .linha-v{display:flex;justify-content:space-between;gap:10px;align-items:center;min-width:0}
+.bloco-cartao .linha-v span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sub{font-size:12px;color:var(--papel-sub)}
+.chip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--papel-2);color:#3A383E;white-space:nowrap}
+.chip.ideia{background:#ECE8E0;color:#6B6862}.chip.roteiro{background:#FFE3C2;color:#8A4A0F}.chip.gravacao{background:var(--vermelho);color:#fff}
+.chip.edicao{background:#17171A;color:#F2F0EB}.chip.publicado{background:#D6F0E1;color:#1F7A4E}
+.novo-bloco{display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:14px;border:2px dashed #8F8A80;background:rgba(255,255,255,.3);color:#3A372F}
+.novo-bloco input{min-height:42px;border-radius:10px;border:1px solid #B9B4AA;background:var(--papel);color:var(--papel-tinta);padding:0 12px}
+.tipo-btn{min-height:42px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:10px;border:1px solid #B9B4AA;background:var(--papel);color:var(--papel-tinta);text-align:left;font-weight:500}
+.tipo-btn:hover{border-color:var(--papel-tinta)}
+.tipo-btn i{width:9px;height:9px;border-radius:2px;flex:none}
+
+/* bloco de conteúdo: colunas por subnicho */
+.colunas{display:flex;gap:20px;align-items:flex-start;overflow-x:auto;padding-bottom:12px}
+.sn{flex:0 0 280px;display:flex;flex-direction:column;gap:10px}
+.sn-cab{display:flex;align-items:center;gap:6px}
+.sn-cab input{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:8px;padding:4px 6px;font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#3A372F}
+.sn-cab input:focus{border-color:#8F8A80;outline:none;background:rgba(255,255,255,.5)}
+.sn-cab .n{font-size:12px;color:#4F4B44}
+.x{width:28px;height:28px;border-radius:8px;border:0;background:transparent;color:inherit;opacity:.55;display:grid;place-items:center;flex:none}
+.x:hover{opacity:1;background:rgba(0,0,0,.08)}
+.video-cartao{display:flex;flex-direction:column;gap:10px;padding:14px;text-decoration:none}
+.video-cartao b{font-weight:600;overflow-wrap:anywhere}
+.etapas{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.etapas span{font-size:11px;font-weight:600;text-align:center;padding:5px 0;border-radius:6px;background:var(--papel-2);color:#6B6862}
+.etapas .ok{background:#17171A;color:#F2F0EB}.etapas .agora{background:var(--vermelho);color:#fff}
+.mais{min-height:42px;border-radius:12px;border:2px dashed #8F8A80;background:rgba(255,255,255,.28);color:#3A372F;font-weight:600}
+.mais:hover{background:rgba(255,255,255,.5)}
+.sn-novo{flex:0 0 240px;display:flex;flex-direction:column;gap:8px}
+.sn-novo input{min-height:42px;border-radius:10px;border:1px solid #B9B4AA;background:var(--papel);color:var(--papel-tinta);padding:0 12px}
+
+/* planilha */
+.resumo{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px}
+.resumo .papel{flex:1 1 180px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.resumo b{font:500 22px var(--f-mono)}
+.tabela-caixa{overflow-x:auto}
+table.tab{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+.tab th{text-align:left;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6B6862;padding:10px;background:#EFECE6;border-bottom:1px solid #DCD7CD}
+.tab td{padding:4px 6px;border-bottom:1px solid #ECE8E0}
+.tab input,.tab select{width:100%;min-height:36px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--papel-tinta);padding:0 8px}
+.tab input:hover,.tab select:hover{border-color:#DCD7CD}.tab input:focus,.tab select:focus{border-color:var(--vermelho);outline:none;background:#fff}
+.tab .valor input{text-align:right;font-family:var(--f-mono)}
+.mes-nav{display:flex;align-items:center;gap:8px}
+.mes-nav b{min-width:150px;text-align:center;font-weight:600}
+.verde{color:#1F7A4E}.verm{color:var(--vermelho-esc)}
+
+/* lista */
+.lista{max-width:640px;display:flex;flex-direction:column;padding:8px}
+.lista label{display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid #ECE8E0}
+.lista input[type=text]{flex:1;min-width:0;min-height:36px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--papel-tinta);padding:0 8px}
+.lista input[type=text]:focus{border-color:var(--vermelho);outline:none;background:#fff}
+.lista .feito input[type=text]{text-decoration:line-through;color:#8E8C93}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--vermelho);flex:none}
+.lista-add{display:flex;gap:8px;padding:10px 8px}
+.lista-add input{flex:1;min-width:0;min-height:40px;border-radius:10px;border:1px solid #DCD7CD;background:#fff;color:var(--papel-tinta);padding:0 12px}
+
+/* vídeo: roteiro, gravação, edição */
+.duas{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.duas>.principal{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.duas>.aside{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.rot{padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.rot-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rot-cab input{flex:1;min-width:160px;font:700 18px var(--f-titulo);letter-spacing:-.4px;background:transparent;border:1px solid transparent;border-radius:8px;padding:2px 6px;color:var(--papel-tinta)}
+.rot-cab input:focus{border-color:#DCD7CD;outline:none;background:#fff}
+.rot textarea{width:100%;min-height:90px;resize:none;border:1px solid #E6E2DA;border-radius:10px;background:#fff;color:var(--papel-tinta);padding:12px 14px;font-size:16px;line-height:1.65;overflow:hidden}
+.rot textarea:focus,.rot input.broll:focus{border-color:var(--vermelho);outline:none}
+.rot input.broll{width:100%;min-height:38px;border:1px solid transparent;border-radius:10px;background:var(--papel-2);color:#3A383E;padding:0 12px;font-size:13px}
+.tempo{font:500 12px var(--f-mono);color:var(--papel-sub)}
+.caixa-escura{background:var(--cartao);color:var(--texto);border:1px solid var(--linha);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.caixa-escura .etq{color:var(--texto-3)}
+.caixa-escura textarea{width:100%;min-height:80px;resize:vertical;border-radius:10px;border:1px solid var(--linha);background:var(--painel);padding:10px 12px}
+.caixa-escura textarea:focus{border-color:var(--vermelho);outline:none}
+.pedido{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:10px;background:var(--painel);border:1px solid var(--linha)}
+.pedido .st{font-size:12px;font-weight:600}
+.st.aberto{color:var(--laranja)}.st.andamento{color:var(--vermelho-claro)}.st.feito{color:var(--verde)}
+.pedido .resp{font-size:13px;color:var(--texto-2);border-left:2px solid var(--verde);padding-left:8px;white-space:pre-wrap}
+.check{display:flex;align-items:center;gap:10px;min-height:34px}
+.check input[type=text]{flex:1;min-width:0;min-height:32px;border:1px solid transparent;border-radius:8px;background:transparent;padding:0 6px}
+.check input[type=text]:focus{border-color:var(--vermelho);outline:none}
+.papel .check input[type=text]{color:var(--papel-tinta)}
+.check.feito input[type=text]{text-decoration:line-through;opacity:.6}
+.take{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:#fff;border:1px solid #ECE8E0}
+.take.feito{background:#F3FAF6;border-color:#CDEBDB}
+.take input[type=text]{min-width:0;min-height:34px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--papel-tinta);padding:0 6px}
+.take input[type=text]:focus{border-color:var(--vermelho);outline:none}
+.take select{min-height:32px;border-radius:8px;border:1px solid #DCD7CD;background:var(--papel);color:var(--papel-tinta);font-size:12px;padding:0 6px}
+.reels{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--papel-sub);white-space:nowrap}
+.ultimo{font-size:11px;font-weight:600;color:#fff;background:var(--vermelho);padding:2px 7px;border-radius:999px}
+.barra{height:6px;border-radius:6px;background:var(--linha);overflow:hidden}.barra i{display:block;height:100%;background:var(--vermelho)}
+.papel .barra{background:var(--papel-2)}
+
+/* mesa livre */
+.mesa{flex:1;min-height:520px;display:flex;position:relative}
+.ferramentas{flex:0 0 74px;display:flex;flex-direction:column;gap:2px;padding:10px 7px;background:var(--painel);border-right:1px solid var(--linha);overflow:auto}
+.ferr{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border:0;border-radius:10px;background:transparent;color:var(--texto-2);font-size:11px;font-weight:500;touch-action:none;user-select:none}
+.ferr:hover{background:var(--cartao);color:var(--texto)}
+.ferr.ativa{background:var(--vermelho);color:#fff}
+.ferr svg{width:20px;height:20px}
+.mesa-rolagem{flex:1;min-width:0;overflow:auto;position:relative}
+.mesa-area{position:relative;min-width:100%;touch-action:pan-x pan-y}
+.mesa-area.ligando{cursor:crosshair}
+.mesa-dica{position:sticky;left:12px;top:12px;display:inline-block;margin:12px;padding:8px 12px;border-radius:10px;background:rgba(14,14,16,.82);color:var(--texto);font-size:12px;z-index:3;pointer-events:none}
+.it{position:absolute;user-select:none;-webkit-user-select:none;touch-action:none;color:var(--papel-tinta)}
+.it.sel{outline:2px solid var(--vermelho);outline-offset:3px}
+.it.de{outline:2px dashed var(--vermelho);outline-offset:3px}
+.it .txt{white-space:pre-wrap;overflow-wrap:anywhere;min-height:1.4em;outline:none}
+.it .txt:empty::before{content:attr(data-vazio);color:#9A968E}
+.it [contenteditable="true"],.it [contenteditable="plaintext-only"]{user-select:text;-webkit-user-select:text;cursor:text;background:rgba(255,255,255,.6);border-radius:4px}
+.nota{padding:14px 16px;border-radius:3px;box-shadow:0 8px 18px rgba(0,0,0,.22);font-weight:500;line-height:1.45}
+.nota.amarela{background:var(--nota)}.nota.branca{background:var(--papel)}.nota.vermelha{background:#FFD3D8}.nota.verde{background:#D6F0E1}.nota.azul{background:#DCE6FA}
+.texto-solto .txt{font:800 28px/1.15 var(--f-titulo);letter-spacing:-.8px}
+.coluna{background:var(--papel-2);border-radius:12px;padding:0 10px 10px;box-shadow:0 2px 0 rgba(0,0,0,.05),0 12px 24px rgba(40,32,20,.18)}
+.coluna>.col-tit{font-weight:700;padding:10px 4px 8px}
+.col-corpo{display:flex;flex-direction:column;gap:8px;min-height:44px}
+.coluna.alvo{box-shadow:0 0 0 3px var(--vermelho),0 12px 24px rgba(40,32,20,.18)}
+.col-corpo>.it{position:relative;left:auto!important;top:auto!important;width:auto!important}
+.col-corpo>.nota{box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.col-vazia{font-size:12px;color:#7A766F;text-align:center;border:1.5px dashed #A7A196;border-radius:9px;padding:10px}
+.cartao-it{background:var(--papel);border-radius:12px;box-shadow:0 2px 0 rgba(0,0,0,.06),0 12px 24px rgba(40,32,20,.2);overflow:hidden}
+.imagem img{display:block;width:100%;height:auto;pointer-events:none}
+.imagem .txt{padding:8px 12px;font-size:13px}
+.form-it{display:flex;flex-direction:column;gap:8px;padding:12px}
+.form-it input{min-height:36px;border-radius:8px;border:1px solid #DCD7CD;background:#fff;color:var(--papel-tinta);padding:0 10px;width:100%}
+.form-it .btn{color:var(--papel-tinta);background:var(--papel-2);border-color:#DCD7CD}
+.link .prev{aspect-ratio:16/9;background:linear-gradient(135deg,#2A2A30,#6A1A10);display:grid;place-items:center;color:#fff;font:700 13px var(--f-titulo);padding:10px;text-align:center}
+.link .corpo{padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.link a{font-weight:600;color:var(--papel-tinta);text-decoration:none;overflow-wrap:anywhere}.link a:hover{text-decoration:underline}
+.link .host{font-size:12px;color:var(--papel-sub)}
+.tarefas{padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tarefas .txt.tit{font-weight:700}
+.tarefas label{display:flex;gap:8px;align-items:flex-start}
+.tarefas label.ok .txt{text-decoration:line-through;color:#8E8C93}
+.tarefas .add{align-self:flex-start;border:0;background:transparent;color:var(--papel-sub);font-size:12px;padding:4px 0}
+.cor{width:110px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.cor input[type=color]{width:100%;height:56px;border:0;border-radius:8px;padding:0;background:none}
+.cor .mono{font-size:11px;color:var(--papel-sub)}
+.it-menu{position:absolute;top:-38px;right:0;display:flex;gap:4px;padding:4px;border-radius:10px;background:var(--cartao);border:1px solid var(--linha);box-shadow:0 8px 18px rgba(0,0,0,.3);z-index:4}
+.it-menu button{width:26px;height:26px;border-radius:7px;border:0;background:transparent;color:var(--texto);display:grid;place-items:center}
+.it-menu button:hover{background:var(--cartao-2)}
+.it-menu .bola{width:16px;height:16px;border-radius:50%;border:1px solid rgba(0,0,0,.25)}
+.fantasma-arrasto{position:fixed;z-index:50;pointer-events:none;opacity:.92;transform:rotate(2deg);box-shadow:0 22px 40px rgba(0,0,0,.35)}
+.fantasma-novo{position:fixed;z-index:50;pointer-events:none;padding:10px 14px;border-radius:8px;background:var(--nota);color:var(--papel-tinta);font-weight:600;box-shadow:0 18px 30px rgba(0,0,0,.35)}
+.linhas{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.linhas path{fill:none;stroke:#6E695F;stroke-width:2.2;pointer-events:stroke;cursor:pointer}
+.linhas path.sel{stroke:var(--vermelho);stroke-width:3}
+.linha-x{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:0;background:var(--vermelho);color:#fff;font-weight:700;z-index:4}
+
+/* pedidos */
+.pedidos-lista{display:flex;flex-direction:column;gap:12px;max-width:760px}
+.pedido-cartao{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.pedido-cartao .cab{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+
+.faixa{padding:8px 16px;background:var(--vermelho);color:#fff;font-size:13px;font-weight:600;text-align:center}
+.carregando{flex:1;display:grid;place-items:center;padding:40px;color:var(--texto-3)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:10px 16px;border-radius:10px;background:var(--cartao);border:1px solid var(--linha);color:var(--texto);font-weight:600;z-index:60;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+
+@media (max-width:820px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  #lado{flex-direction:row;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));overflow-x:auto;border-right:0;border-bottom:1px solid var(--linha)}
+  .nav{flex-direction:row;gap:4px}.nav .etq{display:none}.nav a{white-space:nowrap;min-height:36px;padding:6px 10px}
+  .estado-salvo{margin:0;padding:6px 10px;white-space:nowrap}.estado-salvo span{display:none}
+  .topo,.barra-abas,.chapa{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .mesa{flex-direction:column}
+  .ferramentas{flex:0 0 auto;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--linha)}
+  .ferr{min-width:56px}
+  .mesa-rolagem{min-height:440px}
+  .take{grid-template-columns:auto minmax(0,1fr) auto;}
+  .take .reels,.take select{grid-column:2}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app">
+  <aside id="lado" aria-label="Navegação"></aside>
+  <div id="principal">
+    <div id="faixa"></div>
+    <main id="vista"><div class="carregando">Abrindo o FluxoEDITÁ…</div></main>
+  </div>
+</div>
+<input type="file" id="arquivo-imagem" accept="image/*" hidden>
+
+<script>
+(() => {
+  // ---------- utilidades ----------
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const novoId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const agora = () => new Date().toISOString();
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const ETAPAS = [["ideia", "Ideia"], ["roteiro", "Roteiro"], ["gravacao", "Gravação"], ["edicao", "Edição"], ["publicado", "Publicado"]];
+  const NOME_ETAPA = Object.fromEntries(ETAPAS);
+  const COR_TIPO = { conteudo: "#E3122B", planilha: "#2FA36B", lista: "#8E8C93" };
+  const NOME_TIPO = { conteudo: "Conteúdo", planilha: "Planilha", lista: "Lista" };
+  const TIPOS_TAKE = [["falando", "Falando"], ["tela", "Tela"], ["broll", "B-roll"], ["outro", "Outro"]];
+  const COLECOES = ["blocos", "subnichos", "videos", "pedidos", "planilhas", "listas", "mesas"];
+  const real = v => (Number(v) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const hoje = () => new Date().toISOString().slice(0, 10);
+  const mesDe = d => (d || "").slice(0, 7);
+  const nomeMes = m => { const [a, b] = m.split("-").map(Number); const t = new Date(a, b - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const somaMes = (m, d) => { const [a, b] = m.split("-").map(Number); const x = new Date(a, b - 1 + d, 1); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0"); };
+  const palavras = t => (String(t || "").trim().match(/\S+/g) || []).length;
+  const tempoFala = n => { const s = Math.round(n / 150 * 60); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  const ICONE = {
+    voltar: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>',
+    mais: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 2v10M2 7h10"/></svg>',
+    x: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>',
+    cima: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 7.5L6 4l3.5 3.5"/></svg>',
+    baixo: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg>',
+    grade: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="1.5" y="1.5" width="4.5" height="4.5" rx="1"/><rect x="8" y="1.5" width="4.5" height="4.5" rx="1"/><rect x="1.5" y="8" width="4.5" height="4.5" rx="1"/><rect x="8" y="8" width="4.5" height="4.5" rx="1"/></svg>',
+    envio: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M1.5 7h10M8 3.5L11.5 7 8 10.5"/></svg>',
+  };
+  const FERRAMENTAS = [
+    ["nota", "Nota", '<path d="M4 3h9l3 3v11H4z"/><path d="M7 8h6M7 11h6M7 14h3"/>'],
+    ["texto", "Texto", '<path d="M4 5V3h12v2M10 3v14M7 17h6"/>'],
+    ["coluna", "Coluna", '<rect x="5" y="2.5" width="10" height="15" rx="1.5"/><path d="M5 6h10M7.5 9.5h5M7.5 12.5h5"/>'],
+    ["imagem", "Imagem", '<rect x="2.5" y="4" width="15" height="12" rx="1.5"/><circle cx="7" cy="8" r="1.5"/><path d="M3 14l4.5-4 3.5 3 2.5-2 4 3.5"/>'],
+    ["link", "Link", '<path d="M8.5 11.5l3-3M7 9.5L5 11.5a2.5 2.5 0 003.5 3.5l2-2M13 10.5l2-2A2.5 2.5 0 0011.5 5l-2 2"/>'],
+    ["tarefas", "Tarefas", '<rect x="3" y="3.5" width="4" height="4" rx="1"/><rect x="3" y="11.5" width="4" height="4" rx="1"/><path d="M10 5.5h7M10 13.5h7M3.8 13.4l1.1 1.1 1.8-2"/>'],
+    ["cor", "Cor", '<circle cx="7" cy="7.5" r="4"/><circle cx="13" cy="7.5" r="4"/><circle cx="10" cy="12.5" r="4"/>'],
+    ["linha", "Linha", '<path d="M3.5 16.5C7 8 12 13 16.5 3.5M12.5 3.5h4v4"/>'],
+  ];
+
+  // ---------- estado ----------
+  const S = { carregou: new Set(), sel: null, selLinha: null, ligando: null, editandoForm: null, confirmar: null, mes: mesDe(hoje()) };
+  COLECOES.forEach(c => S[c] = {});
+  let db = null, assets = null, modo = "carregando", erroCarga = null;
+
+  // ---------- guardar no aparelho (funciona sem internet) ----------
+  const CHAVE = "fluxoedita:estado:v1";
+  const ponteNativa = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.fluxoSalvar;
+  const CFG_PADRAO = { dono: "thiagoedit-boop", repo: "fluxoedita-dados", arquivo: "fluxoedita.json", token: "" };
+  let cfg = { ...CFG_PADRAO }, apagados = {}, ultimaSync = null, mudouDesdeSync = false;
+  function lerLocal() {
+    try { if (typeof window.FLUXO_NATIVO_ESTADO === "string" && window.FLUXO_NATIVO_ESTADO) return JSON.parse(window.FLUXO_NATIVO_ESTADO); } catch { }
+    try { const t = localStorage.getItem(CHAVE); return t ? JSON.parse(t) : null; } catch { return null; }
+  }
+  let tGuardar = 0;
+  function guardarLocal() { clearTimeout(tGuardar); tGuardar = setTimeout(guardarAgora, 250); }
+  function guardarAgora() {
+    clearTimeout(tGuardar);
+    const txt = JSON.stringify({ versao: 1, cfg, apagados, ultimaSync, mudouDesdeSync, colecoes: Object.fromEntries(COLECOES.map(c => [c, S[c]])) });
+    if (ponteNativa) { try { ponteNativa.postMessage(txt); return; } catch { } }
+    try { localStorage.setItem(CHAVE, txt); } catch { mostrar("O aparelho não deixou salvar. Libere espaço e tente de novo."); }
+  }
+  function gravar(col, id, dados) {
+    dados.id = id; dados.atualizado = agora();
+    S[col][id] = dados; delete apagados[col + "/" + id];
+    mudouDesdeSync = true; guardarLocal(); agendarSync(); atualizarSalvo();
+  }
+  function apagarDoc(col, id) {
+    delete S[col][id]; apagados[col + "/" + id] = agora();
+    mudouDesdeSync = true; guardarLocal(); agendarSync(); atualizarSalvo();
+  }
+
+  // ---------- sincronizar com a pasta privada do GitHub ----------
+  function ordenar(o) { if (Array.isArray(o)) return o.map(ordenar); if (o && typeof o === "object") return Object.keys(o).sort().reduce((r, k) => (r[k] = ordenar(o[k]), r), {}); return o; }
+  const estavel = o => JSON.stringify(ordenar(o));
+  function mesclarMesa(a, b) {
+    const ap = { ...(a.apagados || {}) }; for (const [k, v] of Object.entries(b.apagados || {})) if (!ap[k] || v > ap[k]) ap[k] = v;
+    const junta = (la, lb) => { const m = new Map(); [...(la || []), ...(lb || [])].forEach(i => { const x = m.get(i.id); if (!x || (i.alt || "") > (x.alt || "")) m.set(i.id, i); }); return [...m.values()].filter(i => !(ap[i.id] && ap[i.id] >= (i.alt || ""))); };
+    const base = (a.atualizado || "") >= (b.atualizado || "") ? a : b;
+    const r = { ...base, itens: junta(a.itens, b.itens), linhas: junta(a.linhas, b.linhas), apagados: ap };
+    const ids = new Set(r.itens.map(i => i.id));
+    r.itens.forEach(i => { if (i.filhos) i.filhos = i.filhos.filter(f => ids.has(f)); });
+    r.itens.forEach(i => { if (i.col) { const c = r.itens.find(x => x.id === i.col); if (!c) delete i.col; else if (!(c.filhos || []).includes(i.id)) c.filhos = [...(c.filhos || []), i.id]; } });
+    r.linhas = r.linhas.filter(l => ids.has(l.de) && ids.has(l.para));
+    return r;
+  }
+  function mesclar(loc, rem) {
+    const out = { versao: 1, colecoes: {}, apagados: { ...(rem.apagados || {}) } };
+    for (const [k, v] of Object.entries(loc.apagados || {})) if (!out.apagados[k] || v > out.apagados[k]) out.apagados[k] = v;
+    COLECOES.forEach(c => {
+      const a = (loc.colecoes || {})[c] || {}, b = (rem.colecoes || {})[c] || {}, r = {};
+      new Set([...Object.keys(a), ...Object.keys(b)]).forEach(id => {
+        const x = a[id], y = b[id];
+        const d = x && y ? (c === "mesas" ? mesclarMesa(x, y) : ((x.atualizado || "") >= (y.atualizado || "") ? x : y)) : (x || y);
+        const ap = out.apagados[c + "/" + id];
+        if (ap && ap >= (d.atualizado || "")) return;
+        r[id] = d;
+      });
+      out.colecoes[c] = r;
+    });
+    const limite = new Date(Date.now() - 60 * 864e5).toISOString();
+    for (const k in out.apagados) if (out.apagados[k] < limite) delete out.apagados[k];
+    return out;
+  }
+  const b64enc = s => { const by = new TextEncoder().encode(s); let bin = ""; for (let i = 0; i < by.length; i += 0x8000) bin += String.fromCharCode.apply(null, by.subarray(i, i + 0x8000)); return btoa(bin); };
+  const b64dec = s => { const bin = atob(String(s).replace(/\s/g, "")); const by = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) by[i] = bin.charCodeAt(i); return new TextDecoder().decode(by); };
+  const urlArq = () => `https://api.github.com/repos/${encodeURIComponent(cfg.dono)}/${encodeURIComponent(cfg.repo)}/contents/${encodeURIComponent(cfg.arquivo)}`;
+  const cab = extra => ({ Authorization: "Bearer " + cfg.token, "X-GitHub-Api-Version": "2022-11-28", ...extra });
+  async function baixar() {
+    const r = await fetch(urlArq() + "?ref=main&t=" + Date.now(), { headers: cab({ Accept: "application/vnd.github+json" }), cache: "no-store" });
+    if (r.status === 404) return { sha: null, dados: null };
+    if (r.status === 401 || r.status === 403) throw new Error("chave");
+    if (!r.ok) throw new Error("http " + r.status);
+    const j = await r.json();
+    let txt;
+    if (j.content && j.encoding === "base64") txt = b64dec(j.content);
+    else { const r2 = await fetch(urlArq() + "?ref=main&t=" + Date.now(), { headers: cab({ Accept: "application/vnd.github.raw+json" }), cache: "no-store" }); if (!r2.ok) throw new Error("http " + r2.status); txt = await r2.text(); }
+    return { sha: j.sha, dados: txt.trim() ? JSON.parse(txt) : null };
+  }
+  async function subir(dados, sha) {
+    const corpo = { message: "FluxoEDITÁ: sincronização de " + new Date().toLocaleString("pt-BR"), content: b64enc(JSON.stringify(dados, null, 1)), branch: "main" };
+    if (sha) corpo.sha = sha;
+    const r = await fetch(urlArq(), { method: "PUT", headers: cab({ Accept: "application/vnd.github+json", "Content-Type": "application/json" }), body: JSON.stringify(corpo) });
+    if (r.status === 401 || r.status === 403 || r.status === 404) throw new Error("chave");
+    return r;
+  }
+  let sincronizando = false, estadoSync = "parado", erroSync = "", tSync = 0;
+  function agendarSync(ms = 4000) { clearTimeout(tSync); tSync = setTimeout(() => sincronizar(), ms); }
+  function aplicar(m) { COLECOES.forEach(c => { S[c] = m.colecoes[c] || {}; }); guardarLocal(); pedirRender(); }
+  async function sincronizar(manual) {
+    if (!cfg.token) { estadoSync = "sem-chave"; atualizarSalvo(); return; }
+    if (!navigator.onLine) { estadoSync = "offline"; atualizarSalvo(); return; }
+    if (sincronizando) { agendarSync(2000); return; }
+    sincronizando = true; estadoSync = "sincronizando"; atualizarSalvo();
+    try {
+      let feito = false;
+      for (let t = 0; t < 4 && !feito; t++) {
+        const rem = await baixar();
+        const loc = { colecoes: Object.fromEntries(COLECOES.map(c => [c, S[c]])), apagados };
+        const m = mesclar(loc, rem.dados || {});
+        if (estavel(m.colecoes) !== estavel(loc.colecoes)) aplicar(m);
+        apagados = m.apagados;
+        const remoto = rem.dados ? { versao: 1, colecoes: Object.fromEntries(COLECOES.map(c => [c, (rem.dados.colecoes || {})[c] || {}])), apagados: rem.dados.apagados || {} } : null;
+        if (remoto && estavel(m) === estavel(remoto)) { feito = true; break; }
+        const r = await subir(m, rem.sha);
+        if (r.ok) { feito = true; break; }
+        if (r.status === 409 || r.status === 422) continue;
+        throw new Error("http " + r.status);
+      }
+      if (!feito) throw new Error("conflito");
+      ultimaSync = agora(); mudouDesdeSync = false; estadoSync = "ok"; erroSync = ""; guardarAgora();
+      if (manual) mostrar("Sincronizado");
+    } catch (e) {
+      if (!navigator.onLine) { estadoSync = "offline"; erroSync = ""; }
+      else { estadoSync = "erro"; erroSync = e.message === "chave" ? "A chave do GitHub não funcionou ou não tem acesso ao fluxoedita-dados. Confira em Ajustes." : "Não consegui falar com o GitHub agora. Eu tento de novo sozinho."; }
+      if (manual && erroSync) mostrar(erroSync);
+    } finally { sincronizando = false; atualizarSalvo(); if (rota().tela === "ajustes") pedirRender(); }
+  }
+  function haQuanto(iso) {
+    if (!iso) return "nunca";
+    const m = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+    return m < 1 ? "agora" : m < 60 ? "há " + m + " min" : m < 1440 ? "há " + Math.round(m / 60) + " h" : "há " + Math.round(m / 1440) + " dias";
+  }
+  function atualizarSalvo() {
+    const el = $(".estado-salvo"); if (!el) return;
+    const txt = { "sem-chave": "Salvo no aparelho · falta conectar", offline: "Sem internet · salvo no aparelho", sincronizando: "Sincronizando…", erro: "Erro ao sincronizar", ok: "Sincronizado " + haQuanto(ultimaSync), parado: mudouDesdeSync ? "Salvo no aparelho" : "Tudo salvo" }[estadoSync] || "Salvo no aparelho";
+    el.className = "estado-salvo" + (estadoSync === "erro" || estadoSync === "sem-chave" ? " erro" : estadoSync === "sincronizando" || estadoSync === "offline" ? " salvando" : "");
+    $("span", el).textContent = txt;
+  }
+  let toastT = 0;
+  function mostrar(msg) {
+    let t = $(".toast"); if (!t) { t = document.createElement("div"); t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200);
+  }
+
+  // ---------- render ----------
+  let agendado = false, sujo = false, arrasto = null;
+  function ocupado() {
+    if (arrasto) return true;
+    const a = document.activeElement;
+    if (!a || !$("#vista").contains(a)) return false;
+    if (a.isContentEditable) return true;
+    if (a.tagName === "TEXTAREA") return true;
+    if (a.tagName === "INPUT" && !["checkbox", "radio", "color", "file", "button"].includes(a.type)) return true;
+    return false;
+  }
+  function pedirRender() {
+    if (ocupado()) { sujo = true; renderLado(); return; }
+    if (agendado) return; agendado = true;
+    requestAnimationFrame(() => { agendado = false; render(); });
+  }
+  document.addEventListener("focusout", () => setTimeout(() => { if (sujo && !ocupado()) { sujo = false; render(); } }, 80));
+
+  function rota() {
+    const h = decodeURIComponent(location.hash.slice(1)); let m;
+    if (h === "inicio-mesa") return { tela: "inicio", aba: "mesa" };
+    if (h === "pedidos") return { tela: "pedidos" };
+    if (h === "ajustes") return { tela: "ajustes" };
+    if ((m = h.match(/^b-([a-z0-9]+)(?:-(mesa))?$/))) return { tela: "bloco", id: m[1], aba: m[2] || "principal" };
+    if ((m = h.match(/^v-([a-z0-9]+)(?:-(roteiro|gravacao|edicao))?$/))) return { tela: "video", id: m[1], aba: m[2] || "mesa" };
+    return { tela: "inicio", aba: "blocos" };
+  }
+  window.addEventListener("hashchange", () => { S.sel = null; S.selLinha = null; S.ligando = null; S.confirmar = null; render(); $("#vista").scrollTop = 0; });
+
+  function render() {
+    renderLado();
+    const r = rota(), v = $("#vista");
+    const rol = $(".mesa-rolagem"), rx = rol ? rol.scrollLeft : 0, ry = rol ? rol.scrollTop : 0, vy = v.scrollTop;
+    let html;
+    if (modo === "carregando" || (modo === "nuvem" && !S.carregou.has("blocos"))) html = erroCarga ? `<div class="carregando">${esc(erroCarga)} Recarregue a página.</div>` : `<div class="carregando">Abrindo seu quadro…</div>`;
+    else if (r.tela === "bloco") html = telaBloco(r);
+    else if (r.tela === "video") html = telaVideo(r);
+    else if (r.tela === "pedidos") html = telaPedidos();
+    else if (r.tela === "ajustes") html = telaAjustes();
+    else html = telaInicio(r);
+    v.innerHTML = html;
+    $$("textarea[data-auto]", v).forEach(autoAltura);
+    const mesa = $(".mesa", v); if (mesa) montarMesa(mesa);
+    const rol2 = $(".mesa-rolagem"); if (rol2) { rol2.scrollLeft = rx; rol2.scrollTop = ry; }
+    v.scrollTop = vy;
+    $("#faixa").innerHTML = !cfg.token && r.tela !== "ajustes" ? `<div class="faixa">Falta conectar a sincronização com o GitHub. Por enquanto tudo fica só neste aparelho. <a href="#ajustes" style="color:#fff">Abrir Ajustes</a></div>` : "";
+  }
+  function autoAltura(t) { t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; }
+
+  const blocosOrdem = () => Object.values(S.blocos).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  const videosDe = (bid, sid) => Object.values(S.videos).filter(v => v.bloco === bid && (sid === undefined || (v.subnicho || "") === sid)).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  const subsDe = bid => Object.values(S.subnichos).filter(s => s.bloco === bid).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+  const pedidosAbertos = () => Object.values(S.pedidos).filter(p => p.estado !== "feito");
+
+  function renderLado() {
+    const r = rota(); const lado = $("#lado");
+    const bl = blocosOrdem();
+    const ativoB = r.tela === "bloco" ? r.id : r.tela === "video" ? (S.videos[r.id] || {}).bloco : null;
+    const nAbertos = pedidosAbertos().length;
+    lado.innerHTML = `
+      <a class="marca" href="#inicio"><i aria-hidden="true"></i><b>FluxoEDITÁ</b></a>
+      <nav class="nav" aria-label="Blocos">
+        <a href="#inicio" class="${r.tela === "inicio" ? "ativo" : ""}">${ICONE.grade}Quadro geral</a>
+        <span class="etq">Blocos</span>
+        ${bl.map(b => `<a href="#b-${b.id}" class="${ativoB === b.id ? "ativo" : ""}"><i class="q" style="background:${COR_TIPO[b.tipo] || "#8E8C93"}"></i>${esc(b.nome || "Sem nome")}<span class="n">${b.tipo === "conteudo" ? videosDe(b.id).length : b.tipo === "lista" ? ((S.listas[b.id] || {}).itens || []).length : ""}</span></a>`).join("")}
+        <span class="etq">Equipe</span>
+        <a href="#pedidos" class="${r.tela === "pedidos" ? "ativo" : ""}"><i class="q" style="background:${nAbertos ? "#FF8A2A" : "#5E5C63"};border-radius:50%"></i>Pedidos<span class="n">${nAbertos || ""}</span></a>
+        <a href="#ajustes" class="${r.tela === "ajustes" ? "ativo" : ""}"><i class="q" style="background:#5E5C63;border-radius:50%"></i>Ajustes</a>
+      </nav>
+      <a class="estado-salvo" href="#ajustes" role="status"><i></i><span></span></a>`;
+    atualizarSalvo();
+  }
+
+  // ---------- quadro geral ----------
+  function telaInicio(r) {
+    const dataHoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+    const topo = `<header class="topo"><div class="topo-esq"><div style="min-width:0"><div class="trilha">${esc(dataHoje)}</div><h1 class="titulo">Quadro geral</h1></div></div>
+      <div class="abas" role="tablist"><a href="#inicio" class="${r.aba === "blocos" ? "ativa" : ""}">Blocos</a><a href="#inicio-mesa" class="${r.aba === "mesa" ? "ativa" : ""}">Mesa livre</a></div></header>`;
+    if (r.aba === "mesa") return topo + htmlMesa("geral");
+    const bl = blocosOrdem();
+    return topo + `<div class="chapa pontos"><div class="grade">
+      ${bl.map(cartaoBloco).join("")}
+      <div class="novo-bloco">
+        <b>Novo bloco</b>
+        <label class="sub" for="novo-bloco-nome">Nome do bloco</label>
+        <input id="novo-bloco-nome" type="text" placeholder="${bl.length ? "Ex.: TikTok, Cursos, Casa" : "Ex.: YouTube"}" autocomplete="off">
+        <span class="sub">Escolha o que ele vai ser:</span>
+        <button class="tipo-btn" data-acao="novoBloco" data-tipo="conteudo"><i style="background:${COR_TIPO.conteudo}"></i>Conteúdo · subnichos e vídeos</button>
+        <button class="tipo-btn" data-acao="novoBloco" data-tipo="planilha"><i style="background:${COR_TIPO.planilha}"></i>Planilha · contas e orçamentos</button>
+        <button class="tipo-btn" data-acao="novoBloco" data-tipo="lista"><i style="background:${COR_TIPO.lista}"></i>Lista · ideias e tarefas</button>
+      </div></div>
+      ${bl.length ? "" : `<div class="vazio" style="margin-top:24px"><h2>Seu quadro ainda tá vazio</h2><p>Crie o primeiro bloco aí em cima. Um bloco de conteúdo guarda os subnichos e os vídeos; dentro de cada vídeo tem roteiro, gravação e edição.</p></div>`}
+    </div>`;
+  }
+  function cartaoBloco(b) {
+    let corpo = "";
+    if (b.tipo === "conteudo") {
+      const vs = videosDe(b.id).sort((x, y) => (y.atualizado || "").localeCompare(x.atualizado || ""));
+      corpo = vs.length ? vs.slice(0, 3).map(v => `<div class="linha-v"><span>${esc(v.titulo || "Vídeo sem título")}</span><span class="chip ${v.etapa || "ideia"}">${NOME_ETAPA[v.etapa || "ideia"]}</span></div>`).join("") + (vs.length > 3 ? `<span class="sub">+ ${vs.length - 3} vídeos</span>` : "")
+        : `<span class="sub">Nenhum vídeo ainda</span>`;
+      corpo = `<div class="sub">${subsDe(b.id).length} subnichos · ${vs.length} vídeos</div>` + corpo;
+    } else if (b.tipo === "planilha") {
+      const t = totaisMes(b.id, S.mes);
+      corpo = `<div class="sub">${esc(nomeMes(S.mes))}</div>
+        <div class="linha-v"><span>Entrou</span><b class="mono verde">${real(t.ent)}</b></div>
+        <div class="linha-v"><span>Saiu</span><b class="mono verm">${real(t.sai)}</b></div>
+        <div class="linha-v" style="border-top:1px solid #E0DCD3;padding-top:6px"><b>Sobrou</b><b class="mono">${real(t.ent - t.sai)}</b></div>`;
+    } else {
+      const it = (S.listas[b.id] || {}).itens || [];
+      corpo = it.length ? it.slice(0, 4).map(i => `<div class="linha-v"><span style="${i.ok ? "text-decoration:line-through;color:#8E8C93" : ""}">· ${esc(i.t)}</span></div>`).join("") : `<span class="sub">Lista vazia</span>`;
+      corpo = `<div class="sub">${it.filter(i => !i.ok).length} abertos · ${it.length} no total</div>` + corpo;
+    }
+    return `<a class="papel bloco-cartao" href="#b-${b.id}"><span class="prego" style="background:${COR_TIPO[b.tipo]}"></span>
+      <span class="etq" style="color:${b.tipo === "conteudo" ? "#B80B20" : b.tipo === "planilha" ? "#1F7A4E" : "#55535A"}">${NOME_TIPO[b.tipo]}</span>
+      <h2>${esc(b.nome || "Sem nome")}</h2>${corpo}</a>`;
+  }
+  function totaisMes(bid, m) {
+    const ls = ((S.planilhas[bid] || {}).linhas || []).filter(l => mesDe(l.data) === m);
+    let ent = 0, sai = 0; ls.forEach(l => { const v = Math.abs(Number(l.valor) || 0); if (l.tipo === "saida") sai += v; else ent += v; });
+    return { ent, sai, n: ls.length };
+  }
+
+  // ---------- bloco ----------
+  function topoBloco(b, r) {
+    const conf = S.confirmar === "bloco:" + b.id;
+    return `<header class="topo"><div class="topo-esq"><a class="voltar" href="#inicio" aria-label="Voltar pro quadro geral">${ICONE.voltar}</a>
+        <div style="min-width:0;flex:1"><div class="trilha"><a href="#inicio">Quadro geral</a> › ${NOME_TIPO[b.tipo]}</div>
+        <input class="titulo" id="bloco-nome" aria-label="Nome do bloco" value="${esc(b.nome)}" data-col="blocos" data-id="${b.id}" data-cam="nome" data-render="lado"></div></div>
+      <div class="topo-dir">
+        ${conf ? `<span class="sub" style="color:var(--texto-2)">Apagar o bloco e tudo dentro dele?</span><button class="btn perigo" data-acao="apagarBloco" data-id="${b.id}">Apagar de vez</button><button class="btn" data-acao="cancelar">Cancelar</button>`
+               : `<button class="btn fantasma perigo peq" data-acao="confirmar" data-chave="bloco:${b.id}">Apagar bloco</button>`}
+        <div class="abas"><a href="#b-${b.id}" class="${r.aba === "principal" ? "ativa" : ""}">${b.tipo === "conteudo" ? "Vídeos" : b.tipo === "planilha" ? "Planilha" : "Lista"}</a><a href="#b-${b.id}-mesa" class="${r.aba === "mesa" ? "ativa" : ""}">Mesa livre</a></div>
+      </div></header>`;
+  }
+  function telaBloco(r) {
+    const b = S.blocos[r.id];
+    if (!b) return `<div class="chapa pontos"><div class="vazio"><h2>Esse bloco não existe mais</h2><p><a href="#inicio">Voltar pro quadro geral</a></p></div></div>`;
+    const topo = topoBloco(b, r);
+    if (r.aba === "mesa") return topo + htmlMesa("b-" + b.id);
+    if (b.tipo === "planilha") return topo + telaPlanilha(b);
+    if (b.tipo === "lista") return topo + telaLista(b);
+    const subs = subsDe(b.id);
+    const semSub = videosDe(b.id, "");
+    const coluna = (s, vs) => `<section class="sn" aria-label="${esc(s ? s.nome : "Sem subnicho")}">
+      <div class="sn-cab">${s ? `<input aria-label="Nome do subnicho" value="${esc(s.nome)}" data-col="subnichos" data-id="${s.id}" data-cam="nome">` : `<input value="Sem subnicho" disabled aria-label="Sem subnicho">`}
+        <span class="n">${vs.length}</span>${s && !vs.length ? `<button class="x" data-acao="apagarSub" data-id="${s.id}" aria-label="Apagar subnicho">${ICONE.x}</button>` : ""}</div>
+      ${vs.map(cartaoVideo).join("")}
+      <button class="mais" data-acao="novoVideo" data-bloco="${b.id}" data-sub="${s ? s.id : ""}">+ Vídeo</button></section>`;
+    return topo + `<div class="chapa pontos"><div class="colunas">
+      ${subs.map(s => coluna(s, videosDe(b.id, s.id))).join("")}
+      ${semSub.length || !subs.length ? coluna(null, semSub) : ""}
+      <div class="sn-novo"><label class="etq" for="novo-sub" style="color:#3A372F">Novo subnicho</label><input id="novo-sub" type="text" placeholder="Ex.: Reviews de tech" autocomplete="off"><button class="mais" data-acao="novoSub" data-bloco="${b.id}">+ Subnicho</button></div>
+    </div></div>`;
+  }
+  function cartaoVideo(v) {
+    const ord = ["roteiro", "gravacao", "edicao"], e = v.etapa || "ideia";
+    const idx = e === "publicado" ? 3 : ord.indexOf(e);
+    return `<a class="papel video-cartao" href="#v-${v.id}"><b>${esc(v.titulo || "Vídeo sem título")}</b>
+      <div class="etapas">${ord.map((o, i) => `<span class="${i < idx ? "ok" : i === idx ? "agora" : ""}">${NOME_ETAPA[o]}</span>`).join("")}</div>
+      <span class="sub">${e === "publicado" ? "publicado" : e === "ideia" ? "só a ideia" : "em " + NOME_ETAPA[e].toLowerCase()}${v.formato === "reels" ? " · Reels" : ""}</span></a>`;
+  }
+
+  function telaPlanilha(b) {
+    const pl = S.planilhas[b.id] || { linhas: [] };
+    const ls = (pl.linhas || []).filter(l => mesDe(l.data) === S.mes).sort((x, y) => (x.data || "").localeCompare(y.data || ""));
+    const t = totaisMes(b.id, S.mes);
+    const cats = [...new Set((pl.linhas || []).map(l => l.categoria).filter(Boolean))];
+    return `<div class="barra-abas"><div class="mes-nav"><button class="btn peq" data-acao="mes" data-d="-1" aria-label="Mês anterior">‹</button><b>${esc(nomeMes(S.mes))}</b><button class="btn peq" data-acao="mes" data-d="1" aria-label="Próximo mês">›</button></div>
+      <button class="btn prim" data-acao="novaLinha" data-id="${b.id}">${ICONE.mais}Nova linha</button></div>
+      <div class="chapa pontos">
+      <div class="resumo"><div class="papel"><span class="etq" style="color:#6B6862">Entrou</span><b class="verde">${real(t.ent)}</b></div><div class="papel"><span class="etq" style="color:#6B6862">Saiu</span><b class="verm">${real(t.sai)}</b></div><div class="papel"><span class="etq" style="color:#6B6862">Sobrou</span><b>${real(t.ent - t.sai)}</b></div></div>
+      <div class="papel tabela-caixa"><table class="tab"><thead><tr><th style="width:150px">Data</th><th>Descrição</th><th style="width:170px">Categoria</th><th style="width:120px">Tipo</th><th style="width:150px;text-align:right">Valor</th><th style="width:44px"></th></tr></thead><tbody>
+      ${ls.map(l => `<tr>
+        <td><input type="date" value="${esc(l.data)}" aria-label="Data" data-col="planilhas" data-id="${b.id}" data-cam="linhas.#${l.id}.data" data-render="1"></td>
+        <td><input type="text" value="${esc(l.descricao)}" placeholder="Ex.: AdSense" aria-label="Descrição" data-col="planilhas" data-id="${b.id}" data-cam="linhas.#${l.id}.descricao"></td>
+        <td><input type="text" list="cats-${b.id}" value="${esc(l.categoria)}" placeholder="Ex.: Ferramentas" aria-label="Categoria" data-col="planilhas" data-id="${b.id}" data-cam="linhas.#${l.id}.categoria"></td>
+        <td><select aria-label="Tipo" data-col="planilhas" data-id="${b.id}" data-cam="linhas.#${l.id}.tipo" data-render="1"><option value="entrada" ${l.tipo !== "saida" ? "selected" : ""}>Entrou</option><option value="saida" ${l.tipo === "saida" ? "selected" : ""}>Saiu</option></select></td>
+        <td class="valor"><input type="text" inputmode="decimal" value="${l.valor ? String(l.valor).replace(".", ",") : ""}" placeholder="0,00" aria-label="Valor" data-col="planilhas" data-id="${b.id}" data-cam="linhas.#${l.id}.valor" data-tipo="num" data-render="blur"></td>
+        <td><button class="x" data-acao="apagarLinha" data-id="${b.id}" data-linha="${l.id}" aria-label="Apagar linha">${ICONE.x}</button></td></tr>`).join("")}
+      ${ls.length ? "" : `<tr><td colspan="6" style="padding:18px;color:#6B6862">Nada lançado em ${esc(nomeMes(S.mes))}. Use “Nova linha”.</td></tr>`}
+      </tbody></table><datalist id="cats-${b.id}">${cats.map(c => `<option value="${esc(c)}">`).join("")}</datalist></div></div>`;
+  }
+  function telaLista(b) {
+    const it = (S.listas[b.id] || {}).itens || [];
+    return `<div class="chapa pontos"><div class="papel lista">
+      ${it.map(i => `<label class="${i.ok ? "feito" : ""}"><input type="checkbox" ${i.ok ? "checked" : ""} aria-label="Feito" data-col="listas" data-id="${b.id}" data-cam="itens.#${i.id}.ok" data-tipo="bool" data-render="1">
+        <input type="text" value="${esc(i.t)}" aria-label="Item" data-col="listas" data-id="${b.id}" data-cam="itens.#${i.id}.t"><button class="x" data-acao="apagarItem" data-id="${b.id}" data-item="${i.id}" aria-label="Apagar item">${ICONE.x}</button></label>`).join("")}
+      <div class="lista-add"><input id="novo-item" type="text" placeholder="Nova ideia ou tarefa" aria-label="Novo item" autocomplete="off"><button class="btn prim" data-acao="novoItem" data-id="${b.id}">Adicionar</button></div>
+    </div></div>`;
+  }
+
+  // ---------- vídeo ----------
+  function telaVideo(r) {
+    const v = S.videos[r.id];
+    if (!v) return `<div class="chapa pontos"><div class="vazio"><h2>Esse vídeo não existe mais</h2><p><a href="#inicio">Voltar pro quadro geral</a></p></div></div>`;
+    const b = S.blocos[v.bloco] || {}; const s = S.subnichos[v.subnicho];
+    const conf = S.confirmar === "video:" + v.id;
+    const topo = `<header class="topo"><div class="topo-esq"><a class="voltar" href="#b-${v.bloco}" aria-label="Voltar pro bloco">${ICONE.voltar}</a>
+        <div style="min-width:0;flex:1"><div class="trilha"><a href="#b-${v.bloco}">${esc(b.nome || "Bloco")}</a>${s ? " › " + esc(s.nome) : ""}</div>
+        <input class="titulo" aria-label="Título do vídeo" value="${esc(v.titulo)}" placeholder="Título do vídeo" data-col="videos" data-id="${v.id}" data-cam="titulo"></div></div>
+      <div class="topo-dir">
+        <select class="sel" aria-label="Etapa" data-col="videos" data-id="${v.id}" data-cam="etapa" data-render="1">${ETAPAS.map(([k, n]) => `<option value="${k}" ${v.etapa === k ? "selected" : ""}>${n}</option>`).join("")}</select>
+        <select class="sel" aria-label="Formato" data-col="videos" data-id="${v.id}" data-cam="formato">${[["youtube", "YouTube 16:9"], ["reels", "Reels 9:16"]].map(([k, n]) => `<option value="${k}" ${v.formato === k ? "selected" : ""}>${n}</option>`).join("")}</select>
+        <select class="sel" aria-label="Subnicho" data-col="videos" data-id="${v.id}" data-cam="subnicho" data-render="1"><option value="">Sem subnicho</option>${subsDe(v.bloco).map(x => `<option value="${x.id}" ${v.subnicho === x.id ? "selected" : ""}>${esc(x.nome)}</option>`).join("")}</select>
+      </div></header>
+      <div class="barra-abas"><div class="abas">${[["mesa", "Mesa livre"], ["roteiro", "Roteiro"], ["gravacao", "Gravação"], ["edicao", "Edição"]].map(([k, n]) => `<a href="#v-${v.id}${k === "mesa" ? "" : "-" + k}" class="${r.aba === k ? "ativa" : ""}">${n}</a>`).join("")}</div>
+        ${conf ? `<span style="display:flex;gap:8px;align-items:center"><span class="sub" style="color:var(--texto-2)">Apagar este vídeo?</span><button class="btn perigo peq" data-acao="apagarVideo" data-id="${v.id}">Apagar de vez</button><button class="btn peq" data-acao="cancelar">Cancelar</button></span>`
+               : `<button class="btn fantasma perigo peq" data-acao="confirmar" data-chave="video:${v.id}">Apagar vídeo</button>`}</div>`;
+    if (r.aba === "roteiro") return topo + abaRoteiro(v);
+    if (r.aba === "gravacao") return topo + abaGravacao(v);
+    if (r.aba === "edicao") return topo + abaEdicao(v);
+    return topo + htmlMesa("v-" + v.id);
+  }
+  function boxPedido(v, para) {
+    const nome = para === "roteirista" ? "Roteirista" : "Editor";
+    const ps = Object.values(S.pedidos).filter(p => p.videoId === v.id && p.para === para).sort((a, b) => (b.criado || "").localeCompare(a.criado || ""));
+    return `<section class="caixa-escura" aria-label="Pedido pro ${nome}"><span class="etq">Pedido pro ${nome}</span>
+      <label class="sub" for="pedido-${para}" style="color:var(--texto-3)">O que você quer que o ${nome} faça neste vídeo?</label>
+      <textarea id="pedido-${para}" placeholder="${para === "roteirista" ? "Ex.: deixar a abertura mais direta" : "Ex.: cortar mantendo o último take de cada fala"}"></textarea>
+      <button class="btn prim" data-acao="enviarPedido" data-para="${para}" data-id="${v.id}">${ICONE.envio}Mandar pro ${nome}</button>
+      ${ps.map(p => `<div class="pedido"><span class="st ${p.estado === "feito" ? "feito" : p.estado === "andamento" ? "andamento" : "aberto"}">${p.estado === "feito" ? "feito" : p.estado === "andamento" ? "o " + nome + " tá fazendo" : "aguardando o " + nome}</span><span>${esc(p.texto)}</span>${p.resposta ? `<span class="resp">${esc(p.resposta)}</span>` : ""}</div>`).join("")}
+      <span class="sub" style="color:var(--texto-3)">O chat do ${nome} lê este pedido na pasta sincronizada e responde aqui.</span></section>`;
+  }
+  function abaRoteiro(v) {
+    const rot = v.roteiro || [];
+    const tot = rot.reduce((n, b) => n + palavras(b.texto), 0);
+    return `<div class="chapa pontos"><div class="duas"><div class="principal">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between"><span class="etq" style="color:#B80B20">Roteiro · ${rot.length} blocos</span><span class="tempo">${tot} palavras · ~${tempoFala(tot)} de fala</span></div>
+      ${rot.map((b, i) => `<article class="papel rot">
+        <div class="rot-cab"><input aria-label="Título do bloco" value="${esc(b.titulo)}" placeholder="Nome do bloco" data-col="videos" data-id="${v.id}" data-cam="roteiro.#${b.id}.titulo">
+          <span class="tempo">~${tempoFala(palavras(b.texto))}</span>
+          <button class="x" data-acao="moverRot" data-id="${v.id}" data-rot="${b.id}" data-d="-1" aria-label="Subir bloco" ${i === 0 ? "disabled" : ""}>${ICONE.cima}</button>
+          <button class="x" data-acao="moverRot" data-id="${v.id}" data-rot="${b.id}" data-d="1" aria-label="Descer bloco" ${i === rot.length - 1 ? "disabled" : ""}>${ICONE.baixo}</button>
+          <button class="x" data-acao="apagarRot" data-id="${v.id}" data-rot="${b.id}" aria-label="Apagar bloco">${ICONE.x}</button></div>
+        <textarea data-auto aria-label="Fala do bloco" placeholder="Escreva a fala deste bloco" data-col="videos" data-id="${v.id}" data-cam="roteiro.#${b.id}.texto">${esc(b.texto)}</textarea>
+        <input class="broll" aria-label="B-roll do bloco" value="${esc(b.broll)}" placeholder="B-roll: o que mostrar enquanto você fala" data-col="videos" data-id="${v.id}" data-cam="roteiro.#${b.id}.broll">
+      </article>`).join("")}
+      <button class="mais" data-acao="novoRot" data-id="${v.id}">+ Bloco do roteiro</button>
+    </div><aside class="aside">${boxPedido(v, "roteirista")}</aside></div></div>`;
+  }
+  function abaGravacao(v) {
+    const rot = v.roteiro || []; const takes = v.takes || [];
+    const grupos = [...rot.map(b => ({ id: b.id, nome: b.titulo || "Bloco sem nome" })), { id: "", nome: "Geral" }];
+    const feitos = takes.filter(t => t.feito).length;
+    const antes = v.antes || [];
+    return `<div class="chapa pontos"><div class="duas"><div class="principal">
+      <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;gap:10px"><span class="etq" style="color:#B80B20">O que gravar</span><span class="tempo">${feitos} de ${takes.length} gravados</span></div>
+        <div class="barra"><i style="width:${takes.length ? Math.round(feitos / takes.length * 100) : 0}%"></i></div></div>
+      ${grupos.filter(g => g.id || takes.some(t => !t.bloco) || !rot.length).map(g => {
+        const ts = takes.filter(t => (t.bloco || "") === g.id);
+        return `<section class="papel rot" aria-label="${esc(g.nome)}"><div class="rot-cab"><b style="font:700 17px var(--f-titulo);letter-spacing:-.3px;flex:1">${esc(g.nome)}</b><span class="tempo">${ts.filter(t => t.feito).length}/${ts.length}</span></div>
+          ${ts.map((t, i) => `<div class="take ${t.feito ? "feito" : ""}">
+            <input type="checkbox" ${t.feito ? "checked" : ""} aria-label="Gravado" data-col="videos" data-id="${v.id}" data-cam="takes.#${t.id}.feito" data-tipo="bool" data-render="1">
+            <input type="text" value="${esc(t.texto)}" placeholder="O que gravar" aria-label="O que gravar" data-col="videos" data-id="${v.id}" data-cam="takes.#${t.id}.texto">
+            <select aria-label="Tipo de take" data-col="videos" data-id="${v.id}" data-cam="takes.#${t.id}.tipo">${TIPOS_TAKE.map(([k, n]) => `<option value="${k}" ${t.tipo === k ? "selected" : ""}>${n}</option>`).join("")}</select>
+            <label class="reels"><input type="checkbox" ${t.reels ? "checked" : ""} data-col="videos" data-id="${v.id}" data-cam="takes.#${t.id}.reels" data-tipo="bool">serve pro Reels</label>
+            <button class="x" data-acao="apagarTake" data-id="${v.id}" data-take="${t.id}" aria-label="Apagar take">${ICONE.x}</button></div>`).join("")}
+          <button class="mais" data-acao="novoTake" data-id="${v.id}" data-rot="${g.id}">+ Take</button></section>`;
+      }).join("")}
+      <span class="sub" style="color:#4F4B44">Na hora de editar, o último take de cada fala é o que vale.</span>
+    </div><aside class="aside">
+      <section class="papel" style="padding:16px;display:flex;flex-direction:column;gap:4px"><span class="etq" style="color:#B80B20">Antes de gravar</span>
+        ${antes.map(a => `<div class="check ${a.ok ? "feito" : ""}"><input type="checkbox" ${a.ok ? "checked" : ""} aria-label="Feito" data-col="videos" data-id="${v.id}" data-cam="antes.#${a.id}.ok" data-tipo="bool" data-render="1"><input type="text" value="${esc(a.t)}" aria-label="Item" data-col="videos" data-id="${v.id}" data-cam="antes.#${a.id}.t"><button class="x" data-acao="apagarDe" data-id="${v.id}" data-lista="antes" data-item="${a.id}" aria-label="Apagar">${ICONE.x}</button></div>`).join("")}
+        <button class="btn peq" style="align-self:flex-start;color:var(--papel-tinta);background:var(--papel-2);border-color:#DCD7CD" data-acao="addDe" data-id="${v.id}" data-lista="antes">+ Item</button></section>
+      <section class="caixa-escura"><span class="etq">Vai virar</span>
+        <div style="display:flex;justify-content:space-between"><span>${v.formato === "reels" ? "Reels" : "Vídeo do YouTube"}</span><span class="mono" style="color:var(--texto-3)">${v.formato === "reels" ? "9:16" : "16:9"}</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Takes que servem pro Reels</span><span class="mono" style="color:var(--texto-3)">${takes.filter(t => t.reels).length}</span></div></section>
+    </aside></div></div>`;
+  }
+  function abaEdicao(v) {
+    const ed = v.edicao || { itens: [], notas: "", pasta: "" };
+    const it = ed.itens || []; const ok = it.filter(i => i.ok).length;
+    return `<div class="chapa pontos"><div class="duas"><div class="principal">
+      <section class="papel rot"><div class="rot-cab"><b style="font:700 17px var(--f-titulo);flex:1">Checklist da edição</b><span class="tempo">${ok}/${it.length}</span></div>
+        <div class="barra"><i style="width:${it.length ? Math.round(ok / it.length * 100) : 0}%"></i></div>
+        ${it.map(a => `<div class="check ${a.ok ? "feito" : ""}"><input type="checkbox" ${a.ok ? "checked" : ""} aria-label="Feito" data-col="videos" data-id="${v.id}" data-cam="edicao.itens.#${a.id}.ok" data-tipo="bool" data-render="1"><input type="text" value="${esc(a.t)}" aria-label="Item" data-col="videos" data-id="${v.id}" data-cam="edicao.itens.#${a.id}.t"><button class="x" data-acao="apagarDe" data-id="${v.id}" data-lista="edicao.itens" data-item="${a.id}" aria-label="Apagar">${ICONE.x}</button></div>`).join("")}
+        <button class="btn peq" style="align-self:flex-start;color:var(--papel-tinta);background:var(--papel-2);border-color:#DCD7CD" data-acao="addDe" data-id="${v.id}" data-lista="edicao.itens">+ Item</button></section>
+      <section class="papel rot"><label class="etq" for="ed-pasta" style="color:#6B6862">Pasta do projeto</label>
+        <input id="ed-pasta" class="broll" value="${esc(ed.pasta)}" placeholder="Ex.: Arquivos Brutos / MetaQuest" data-col="videos" data-id="${v.id}" data-cam="edicao.pasta">
+        <label class="etq" for="ed-notas" style="color:#6B6862">Notas pra edição</label>
+        <textarea id="ed-notas" data-auto placeholder="Motion, trilha, efeitos, cortes que você já sabe" data-col="videos" data-id="${v.id}" data-cam="edicao.notas">${esc(ed.notas)}</textarea></section>
+    </div><aside class="aside">${boxPedido(v, "editor")}</aside></div></div>`;
+  }
+
+  // ---------- pedidos ----------
+  function telaPedidos() {
+    const ps = Object.values(S.pedidos).sort((a, b) => (b.criado || "").localeCompare(a.criado || ""));
+    const abertos = ps.filter(p => p.estado !== "feito"), feitos = ps.filter(p => p.estado === "feito");
+    const cartao = p => { const v = S.videos[p.videoId]; return `<article class="papel pedido-cartao"><div class="cab"><span class="etq" style="color:#B80B20">Pro ${p.para === "roteirista" ? "Roteirista" : "Editor"}</span>
+        <span class="chip ${p.estado === "feito" ? "publicado" : p.estado === "andamento" ? "gravacao" : "roteiro"}">${p.estado === "feito" ? "feito" : p.estado === "andamento" ? "fazendo" : "aguardando"}</span></div>
+      <b>${esc(p.texto)}</b>${v ? `<a href="#v-${v.id}-${p.para === "roteirista" ? "roteiro" : "edicao"}" style="color:#B80B20;font-size:13px">${esc(v.titulo || "Vídeo")}</a>` : `<span class="sub">${esc(p.videoTitulo || "")}</span>`}
+      ${p.resposta ? `<div style="border-left:3px solid var(--verde);padding-left:10px;white-space:pre-wrap">${esc(p.resposta)}</div>` : ""}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${p.estado !== "feito" ? `<button class="btn peq" style="color:var(--papel-tinta);background:var(--papel-2);border-color:#DCD7CD" data-acao="pedidoFeito" data-id="${p.id}">Marcar como feito</button>` : ""}<button class="btn peq fantasma" style="color:var(--vermelho-esc);border-color:#DCD7CD" data-acao="apagarPedido" data-id="${p.id}">Apagar</button></div></article>`; };
+    return `<header class="topo"><div class="topo-esq"><a class="voltar" href="#inicio" aria-label="Voltar">${ICONE.voltar}</a><div><div class="trilha">Equipe</div><h1 class="titulo">Pedidos</h1></div></div></header>
+      <div class="chapa pontos"><div class="pedidos-lista">
+        <span class="etq" style="color:#3A372F">Abertos · ${abertos.length}</span>${abertos.map(cartao).join("") || `<div class="vazio"><p>Nenhum pedido aberto. Dentro de um vídeo, use “Mandar pro Roteirista” ou “Mandar pro Editor”.</p></div>`}
+        ${feitos.length ? `<span class="etq" style="color:#3A372F;margin-top:12px">Feitos · ${feitos.length}</span>${feitos.map(cartao).join("")}` : ""}
+      </div></div>`;
+  }
+
+  // ---------- campos (todo input com data-col salva sozinho) ----------
+  function caminhar(obj, cam, valor) {
+    const partes = cam.split(".");
+    let o = obj;
+    for (let i = 0; i < partes.length - 1; i++) {
+      const p = partes[i];
+      if (p.startsWith("#")) { o = (o || []).find(x => x.id === p.slice(1)); }
+      else { if (o[p] == null) o[p] = {}; o = o[p]; }
+      if (!o) return false;
+    }
+    const ult = partes[partes.length - 1];
+    if (ult.startsWith("#")) return false;
+    o[ult] = valor; return true;
+  }
+  function aplicarCampo(el) {
+    const col = el.dataset.col, id = el.dataset.id; if (!col || !id) return;
+    const doc = clone(S[col][id] || {});
+    let val = el.dataset.tipo === "bool" ? el.checked : el.value;
+    if (el.dataset.tipo === "num") { const n = parseFloat(String(val).replace(/\./g, "").replace(",", ".")); val = isFinite(n) ? n : 0; }
+    if (!caminhar(doc, el.dataset.cam, val)) return;
+    gravar(col, id, doc, el.dataset.tipo === "bool" || el.tagName === "SELECT" ? 150 : 600);
+    const rr = el.dataset.render;
+    if (rr === "lado") renderLado();
+    else if (rr === "1") pedirRender();
+    else if (rr === "blur") el.addEventListener("blur", () => pedirRender(), { once: true });
+  }
+  document.addEventListener("input", e => {
+    const el = e.target;
+    if (el.matches("textarea[data-auto]")) autoAltura(el);
+    if (el.dataset && el.dataset.col && el.type !== "checkbox" && el.tagName !== "SELECT") aplicarCampo(el);
+  });
+  document.addEventListener("change", e => {
+    const el = e.target;
+    if (el.dataset && el.dataset.col && (el.type === "checkbox" || el.tagName === "SELECT" || el.type === "date")) aplicarCampo(el);
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter" && e.target.id === "novo-item") { e.preventDefault(); const b = $('[data-acao="novoItem"]'); if (b) b.click(); }
+    if (e.key === "Enter" && e.target.id === "novo-sub") { e.preventDefault(); const b = $('[data-acao="novoSub"]'); if (b) b.click(); }
+    if (e.key === "Enter" && e.target.id === "novo-bloco-nome") { e.preventDefault(); const b = $('[data-acao="novoBloco"][data-tipo="conteudo"]'); if (b) b.click(); }
+  });
+
+  // ---------- ações ----------
+  function novoVideoDados(bid, sid) {
+    const mk = t => ({ id: novoId("i"), t, ok: false });
+    return {
+      bloco: bid, subnicho: sid || "", titulo: "", etapa: "ideia", formato: (S.blocos[bid] && /insta|reels/i.test(S.blocos[bid].nome)) ? "reels" : "youtube", ordem: Date.now(), criado: agora(),
+      roteiro: [{ id: novoId("r"), titulo: "Gancho", texto: "", broll: "" }, { id: novoId("r"), titulo: "Conteúdo", texto: "", broll: "" }, { id: novoId("r"), titulo: "Fechamento", texto: "", broll: "" }],
+      takes: [], antes: ["Bateria carregada", "Cartão vazio", "Microfone ligado", "Luz ligada"].map(mk),
+      edicao: { itens: ["Decupar (último take de cada fala)", "Corte", "Trilha e efeitos", "Motion e textos", "Thumbnail", "Título e descrição", "Agendar ou publicar"].map(mk), notas: "", pasta: "" },
+    };
+  }
+  const editarVideo = (id, fn) => { const v = clone(S.videos[id]); if (!v) return; fn(v); gravar("videos", id, v, 150); render(); };
+  const acoes = {
+    confirmar: el => { S.confirmar = el.dataset.chave; render(); },
+    cancelar: () => { S.confirmar = null; render(); },
+    novoBloco: el => {
+      const inp = $("#novo-bloco-nome"); const nome = (inp && inp.value.trim()) || NOME_TIPO[el.dataset.tipo];
+      const id = novoId("b"), tipo = el.dataset.tipo;
+      gravar("blocos", id, { nome, tipo, ordem: Date.now(), criado: agora() }, 0);
+      if (tipo === "planilha") gravar("planilhas", id, { linhas: [] }, 0);
+      if (tipo === "lista") gravar("listas", id, { itens: [] }, 0);
+      location.hash = "b-" + id;
+    },
+    apagarBloco: el => {
+      const id = el.dataset.id;
+      Object.values(S.videos).filter(v => v.bloco === id).forEach(v => { apagarDoc("videos", v.id); apagarDoc("mesas", "v-" + v.id); });
+      Object.values(S.subnichos).filter(s => s.bloco === id).forEach(s => apagarDoc("subnichos", s.id));
+      ["planilhas", "listas"].forEach(c => S[c][id] && apagarDoc(c, id));
+      apagarDoc("mesas", "b-" + id); apagarDoc("blocos", id); S.confirmar = null; location.hash = "inicio"; mostrar("Bloco apagado");
+    },
+    novoSub: el => {
+      const inp = $("#novo-sub"); const nome = inp && inp.value.trim(); if (!nome) { inp && inp.focus(); mostrar("Dê um nome pro subnicho"); return; }
+      gravar("subnichos", novoId("s"), { bloco: el.dataset.bloco, nome, ordem: Date.now() }, 0); render();
+    },
+    apagarSub: el => { apagarDoc("subnichos", el.dataset.id); render(); },
+    novoVideo: el => { const id = novoId("v"); gravar("videos", id, novoVideoDados(el.dataset.bloco, el.dataset.sub), 0); location.hash = "v-" + id; setTimeout(() => { const t = $("input.titulo"); if (t) t.focus(); }, 60); },
+    apagarVideo: el => { const v = S.videos[el.dataset.id]; const b = v ? v.bloco : ""; apagarDoc("videos", el.dataset.id); apagarDoc("mesas", "v-" + el.dataset.id); S.confirmar = null; location.hash = b ? "b-" + b : "inicio"; mostrar("Vídeo apagado"); },
+    novoRot: el => editarVideo(el.dataset.id, v => { (v.roteiro = v.roteiro || []).push({ id: novoId("r"), titulo: "", texto: "", broll: "" }); }),
+    apagarRot: el => editarVideo(el.dataset.id, v => { v.roteiro = (v.roteiro || []).filter(b => b.id !== el.dataset.rot); (v.takes || []).forEach(t => { if (t.bloco === el.dataset.rot) t.bloco = ""; }); }),
+    moverRot: el => editarVideo(el.dataset.id, v => { const a = v.roteiro || []; const i = a.findIndex(b => b.id === el.dataset.rot), j = i + Number(el.dataset.d); if (i < 0 || j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; }),
+    novoTake: el => { editarVideo(el.dataset.id, v => { (v.takes = v.takes || []).push({ id: novoId("t"), bloco: el.dataset.rot || "", texto: "", tipo: "falando", feito: false, reels: false }); }); setTimeout(() => { const ins = $$(`[data-cam$=".texto"][data-cam^="takes."]`); const u = ins[ins.length - 1]; if (u) u.focus(); }, 40); },
+    apagarTake: el => editarVideo(el.dataset.id, v => { v.takes = (v.takes || []).filter(t => t.id !== el.dataset.take); }),
+    addDe: el => editarVideo(el.dataset.id, v => { const a = el.dataset.lista.split(".").reduce((o, k) => (o[k] = o[k] || (k === "itens" || k === "antes" ? [] : {})), v); a.push({ id: novoId("i"), t: "", ok: false }); }),
+    apagarDe: el => editarVideo(el.dataset.id, v => { const ks = el.dataset.lista.split("."); const pai = ks.slice(0, -1).reduce((o, k) => o[k], v); const k = ks[ks.length - 1]; pai[k] = (pai[k] || []).filter(i => i.id !== el.dataset.item); }),
+    enviarPedido: el => {
+      const ta = $("#pedido-" + el.dataset.para); const texto = ta && ta.value.trim(); if (!texto) { ta && ta.focus(); mostrar("Escreva o pedido primeiro"); return; }
+      const v = S.videos[el.dataset.id] || {};
+      gravar("pedidos", novoId("p"), { para: el.dataset.para, videoId: el.dataset.id, videoTitulo: v.titulo || "", bloco: v.bloco || "", texto, estado: "aberto", resposta: "", criado: agora() }, 0);
+      ta.value = ""; render(); mostrar("Pedido enviado pro " + (el.dataset.para === "roteirista" ? "Roteirista" : "Editor"));
+    },
+    pedidoFeito: el => { const p = clone(S.pedidos[el.dataset.id]); p.estado = "feito"; gravar("pedidos", p.id, p, 0); render(); },
+    apagarPedido: el => { apagarDoc("pedidos", el.dataset.id); render(); },
+    mes: el => { S.mes = somaMes(S.mes, Number(el.dataset.d)); render(); },
+    novaLinha: el => { const id = el.dataset.id; const pl = clone(S.planilhas[id] || { linhas: [] }); const dia = mesDe(hoje()) === S.mes ? hoje() : S.mes + "-01"; (pl.linhas = pl.linhas || []).push({ id: novoId("l"), data: dia, descricao: "", categoria: "", tipo: "saida", valor: 0 }); gravar("planilhas", id, pl, 0); render(); setTimeout(() => { const ins = $$('[data-cam$=".descricao"]'); const u = ins[ins.length - 1]; if (u) u.focus(); }, 40); },
+    apagarLinha: el => { const id = el.dataset.id; const pl = clone(S.planilhas[id]); pl.linhas = pl.linhas.filter(l => l.id !== el.dataset.linha); gravar("planilhas", id, pl, 0); render(); },
+    novoItem: el => { const inp = $("#novo-item"); const t = inp && inp.value.trim(); if (!t) { inp && inp.focus(); return; } const id = el.dataset.id; const li = clone(S.listas[id] || { itens: [] }); (li.itens = li.itens || []).push({ id: novoId("i"), t, ok: false }); gravar("listas", id, li, 0); render(); setTimeout(() => { const n = $("#novo-item"); if (n) n.focus(); }, 30); },
+    apagarItem: el => { const id = el.dataset.id; const li = clone(S.listas[id]); li.itens = li.itens.filter(i => i.id !== el.dataset.item); gravar("listas", id, li, 0); render(); },
+  };
+  document.addEventListener("click", e => {
+    const el = e.target.closest("[data-acao]");
+    if (el && acoes[el.dataset.acao] && !el.closest(".mesa-area")) { e.preventDefault(); acoes[el.dataset.acao](el, e); }
+  });
+
+  // ================= MESA LIVRE =================
+  function htmlMesa(mid) {
+    return `<div class="mesa" data-mesa="${mid}">
+      <div class="ferramentas" role="toolbar" aria-label="Adicionar à mesa">${FERRAMENTAS.map(([k, n, p]) => `<button type="button" class="ferr ${S.ligando && k === "linha" ? "ativa" : ""}" data-novo="${k}" aria-label="${n}"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">${p}</svg>${n}</button>`).join("")}</div>
+      <div class="mesa-rolagem"><div class="mesa-area pontos ${S.ligando ? "ligando" : ""}"></div></div></div>`;
+  }
+  const mesaDados = mid => S.mesas[mid] || { itens: [], linhas: [] };
+  function salvarMesa(mid, m) {
+    const ant = S.mesas[mid] || { itens: [], linhas: [] }, t = agora();
+    m.apagados = { ...(m.apagados || {}) };
+    const marcar = (lista, velhas) => {
+      const mv = new Map((velhas || []).map(i => [i.id, i]));
+      (lista || []).forEach(i => { const v = mv.get(i.id); const a = { ...i }; delete a.alt; const b = v ? { ...v } : null; if (b) delete b.alt; if (!b || JSON.stringify(a) !== JSON.stringify(b)) i.alt = t; mv.delete(i.id); });
+      mv.forEach((_, id) => { m.apagados[id] = t; });
+    };
+    marcar(m.itens, ant.itens); marcar(m.linhas, ant.linhas);
+    gravar("mesas", mid, m);
+  }
+  function itemPorId(m, id) { return (m.itens || []).find(i => i.id === id); }
+
+  function htmlItem(it, m) {
+    const sel = S.sel === it.id ? " sel" : "", de = S.ligando && S.ligando.de === it.id ? " de" : "";
+    const pos = it.col ? "" : `left:${it.x || 0}px;top:${it.y || 0}px;`;
+    const st = `style="${pos}width:${it.w || 220}px"`;
+    const menu = S.sel === it.id ? `<div class="it-menu">${it.tipo === "nota" ? ["amarela", "branca", "vermelha", "verde", "azul"].map(c => `<button type="button" data-it-acao="cor" data-valor="${c}" aria-label="Cor ${c}"><span class="bola nota ${c}" style="padding:0;box-shadow:none"></span></button>`).join("") : ""}${["imagem", "link"].includes(it.tipo) ? `<button type="button" data-it-acao="editar" aria-label="Editar">✎</button>` : ""}<button type="button" data-it-acao="apagar" aria-label="Apagar">${ICONE.x}</button></div>` : "";
+    const ed = (campo, vazio, extra = "") => `<div class="txt ${extra}" data-edita="${campo}" data-vazio="${vazio}">${esc(campo.split(".").reduce((o, k) => o == null ? o : o[k], it) || "")}</div>`;
+    switch (it.tipo) {
+      case "nota": return `<div class="it nota ${it.cor || "amarela"}${sel}${de}" data-it="${it.id}" ${st}>${menu}${ed("texto", "Dois cliques pra escrever")}</div>`;
+      case "texto": return `<div class="it texto-solto${sel}${de}" data-it="${it.id}" ${st}>${menu}${ed("texto", "Texto solto")}</div>`;
+      case "coluna": {
+        const filhos = (it.filhos || []).map(fid => itemPorId(m, fid)).filter(Boolean);
+        return `<div class="it coluna${sel}${de}" data-it="${it.id}" ${st}>${menu}${ed("titulo", "Coluna", "col-tit")}<div class="col-corpo">${filhos.map(f => htmlItem(f, m)).join("")}</div>${filhos.length ? "" : `<div class="col-vazia">Arraste cartões pra cá</div>`}</div>`;
+      }
+      case "imagem": {
+        const editar = !it.src || S.editandoForm === it.id;
+        return `<figure class="it cartao-it imagem${sel}${de}" data-it="${it.id}" ${st} style="margin:0;${pos}width:${it.w || 260}px">${menu}${editar ? `<div class="form-it"><label class="sub" for="img-${it.id}">Link da imagem</label><input id="img-${it.id}" type="url" placeholder="https://…" value="${esc(it.src)}" data-form="src">
+          ${assets ? `<button type="button" class="btn peq" data-it-acao="arquivo">Escolher do computador</button>` : ""}<button type="button" class="btn peq" data-it-acao="okForm">Pronto</button></div>` : `<img src="${esc(it.src)}" alt="${esc(it.legenda || "Imagem")}" draggable="false">${ed("legenda", "Legenda")}`}</figure>`;
+      }
+      case "link": {
+        const editar = !it.url || S.editandoForm === it.id;
+        let host = ""; try { host = new URL(it.url).hostname.replace(/^www\./, ""); } catch { }
+        return `<div class="it cartao-it link${sel}${de}" data-it="${it.id}" ${st}>${menu}${editar ? `<div class="form-it"><label class="sub" for="url-${it.id}">Link</label><input id="url-${it.id}" type="url" placeholder="https://youtube.com/…" value="${esc(it.url)}" data-form="url"><label class="sub" for="tit-${it.id}">Nome</label><input id="tit-${it.id}" type="text" placeholder="Ex.: Review de referência" value="${esc(it.titulo)}" data-form="titulo"><button type="button" class="btn peq" data-it-acao="okForm">Pronto</button></div>`
+          : `<div class="prev">${esc(host || "link")}</div><div class="corpo"><a href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.titulo || it.url)}</a><span class="host">${esc(host)}</span></div>`}</div>`;
+      }
+      case "tarefas": return `<div class="it cartao-it tarefas${sel}${de}" data-it="${it.id}" ${st}>${menu}${ed("titulo", "Tarefas", "tit")}
+        ${(it.itens || []).map((t, i) => `<label class="${t.ok ? "ok" : ""}"><input type="checkbox" ${t.ok ? "checked" : ""} data-tarefa="${i}" aria-label="Feito">${ed("itens." + i + ".t", "Dois cliques pra escrever")}</label>`).join("")}
+        <button type="button" class="add" data-it-acao="tarefa">+ tarefa</button></div>`;
+      case "cor": return `<div class="it cartao-it cor${sel}${de}" data-it="${it.id}" ${st}>${menu}<input type="color" value="${esc(it.hex || "#E3122B")}" aria-label="Cor" data-cor><span class="mono">${esc((it.hex || "#E3122B").toUpperCase())}</span></div>`;
+    }
+    return "";
+  }
+
+  function montarMesa(raiz) {
+    const mid = raiz.dataset.mesa, area = $(".mesa-area", raiz), m = mesaDados(mid);
+    const soltos = (m.itens || []).filter(i => !i.col);
+    let w = 1600, h = 1100;
+    soltos.forEach(i => { w = Math.max(w, (i.x || 0) + (i.w || 220) + 500); h = Math.max(h, (i.y || 0) + 700); });
+    area.style.width = w + "px"; area.style.height = h + "px";
+    area.innerHTML = (soltos.length ? "" : `<div class="mesa-dica">Arraste uma peça da barra pra cá, ou dê dois cliques no vazio pra criar uma nota.</div>`)
+      + `<svg class="linhas" width="${w}" height="${h}"></svg>` + soltos.map(i => htmlItem(i, m)).join("");
+    if (S.ligando) { const d = document.createElement("div"); d.className = "mesa-dica"; d.textContent = S.ligando.de ? "Agora clique no cartão de destino. Esc cancela." : "Clique no primeiro cartão da ligação. Esc cancela."; area.prepend(d); }
+    desenharLinhas(area, m);
+  }
+  function centro(area, id) {
+    const el = $(`[data-it="${id}"]`, area); if (!el) return null;
+    const a = area.getBoundingClientRect(), r = el.getBoundingClientRect();
+    return [r.left - a.left + r.width / 2, r.top - a.top + r.height / 2, r.width / 2, r.height / 2];
+  }
+  function desenharLinhas(area, m) {
+    const svg = $(".linhas", area); if (!svg) return;
+    $$(".linha-x", area).forEach(x => x.remove());
+    svg.innerHTML = `<defs><marker id="seta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5 0 10z" fill="#6E695F"/></marker><marker id="seta-v" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5 0 10z" fill="#E3122B"/></marker></defs>`
+      + (m.linhas || []).map(l => {
+        const a = centro(area, l.de), b = centro(area, l.para); if (!a || !b) return "";
+        // sai da borda do cartão, não do meio
+        const corte = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1]; const k = Math.min(p[2] / Math.abs(dx || 1e-6), p[3] / Math.abs(dy || 1e-6), 1); return [p[0] + dx * k, p[1] + dy * k]; };
+        const [x1, y1] = corte(a, b), [x2, y2] = corte(b, a);
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, cx = mx + (y1 - y2) * 0.12, cy = my + (x2 - x1) * 0.12;
+        l._meio = [mx * 0.5 + cx * 0.5, my * 0.5 + cy * 0.5];
+        const sel = S.selLinha === l.id;
+        return `<path d="M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}" data-linha="${l.id}" class="${sel ? "sel" : ""}" marker-end="url(#${sel ? "seta-v" : "seta"})"/>`;
+      }).join("");
+    const l = (m.linhas || []).find(x => x.id === S.selLinha);
+    if (l && l._meio) { const b = document.createElement("button"); b.type = "button"; b.className = "linha-x"; b.dataset.apagarLinha = l.id; b.setAttribute("aria-label", "Apagar ligação"); b.textContent = "×"; b.style.left = l._meio[0] + "px"; b.style.top = l._meio[1] + "px"; area.appendChild(b); }
+  }
+  function mesaAtual() { const r = $(".mesa"); return r ? r.dataset.mesa : null; }
+  function redesenharMesa() { const r = $(".mesa"); if (r) montarMesa(r); }
+  function pontoNaArea(area, cx, cy) { const a = area.getBoundingClientRect(); return [cx - a.left, cy - a.top]; }
+
+  function criarItem(tipo, x, y, colAlvo) {
+    const mid = mesaAtual(); if (!mid) return;
+    const m = clone(mesaDados(mid)); m.itens = m.itens || []; m.linhas = m.linhas || [];
+    const base = { id: novoId("m"), tipo, x: Math.max(0, Math.round(x)), y: Math.max(0, Math.round(y)) };
+    const extra = { nota: { texto: "", cor: "amarela", w: 220 }, texto: { texto: "", w: 420 }, coluna: { titulo: "", w: 260, filhos: [] }, imagem: { src: "", legenda: "", w: 260 }, link: { url: "", titulo: "", w: 240 }, tarefas: { titulo: "", w: 240, itens: [{ t: "", ok: false }] }, cor: { hex: "#E3122B", w: 110 } }[tipo];
+    const it = { ...base, ...extra };
+    if (colAlvo && tipo !== "coluna") { const c = itemPorId(m, colAlvo); if (c) { it.col = c.id; delete it.x; delete it.y; c.filhos = [...(c.filhos || []), it.id]; } }
+    m.itens.push(it);
+    S.sel = it.id; if (tipo === "imagem" || tipo === "link") S.editandoForm = it.id;
+    salvarMesa(mid, m, 0); redesenharMesa();
+    if (["nota", "texto", "coluna", "tarefas"].includes(tipo)) { const el = $(`[data-it="${it.id}"] [data-edita]`); if (el) editar(el); }
+    else if (tipo === "imagem" || tipo === "link") { const f = $(`[data-it="${it.id}"] input`); if (f) f.focus(); }
+  }
+  function apagarItem(mid, id) {
+    const m = clone(mesaDados(mid)); const it = itemPorId(m, id); if (!it) return;
+    const fora = new Set([id, ...(it.tipo === "coluna" ? (it.filhos || []) : [])]);
+    m.itens = m.itens.filter(i => !fora.has(i.id));
+    m.itens.forEach(i => { if (i.filhos) i.filhos = i.filhos.filter(f => !fora.has(f)); });
+    m.linhas = (m.linhas || []).filter(l => !fora.has(l.de) && !fora.has(l.para));
+    S.sel = null; salvarMesa(mid, m, 0); redesenharMesa();
+  }
+
+  // edição de texto direto no cartão (dois cliques)
+  function editar(el) {
+    if (el.isContentEditable) return;
+    try { el.contentEditable = "plaintext-only"; } catch { el.contentEditable = "true"; }
+    if (!el.isContentEditable) el.contentEditable = "true";
+    el.focus();
+    const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    const fim = () => {
+      el.removeEventListener("blur", fim); el.contentEditable = "false";
+      const mid = mesaAtual(); if (!mid) return;
+      const id = el.closest("[data-it]").dataset.it; const m = clone(mesaDados(mid)); const it = itemPorId(m, id); if (!it) return;
+      const novo = el.innerText.replace(/\n$/, "");
+      const ks = el.dataset.edita.split("."); let o = it; for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]];
+      if (o && o[ks[ks.length - 1]] !== novo) { o[ks[ks.length - 1]] = novo; salvarMesa(mid, m); }
+      if (sujo) { sujo = false; setTimeout(render, 30); }
+    };
+    el.addEventListener("blur", fim);
+  }
+
+  // arrastar peças da barra e cartões na mesa
+  document.addEventListener("pointerdown", e => {
+    const ferr = e.target.closest(".ferr[data-novo]");
+    if (ferr) {
+      const tipo = ferr.dataset.novo;
+      if (tipo === "linha") return;
+      e.preventDefault();
+      arrasto = { modo: "novo", tipo, x0: e.clientX, y0: e.clientY, mexeu: false, fantasma: null };
+      return;
+    }
+    const area = e.target.closest(".mesa-area"); if (!area) return;
+    if (e.target.closest(".linha-x")) return;
+    const linhaEl = e.target.closest("path[data-linha]");
+    if (linhaEl) { S.selLinha = linhaEl.dataset.linha; S.sel = null; redesenharMesa(); return; }
+    const itEl = e.target.closest("[data-it]");
+    if (!itEl) { if (S.sel || S.selLinha) { S.sel = null; S.selLinha = null; S.editandoForm = null; redesenharMesa(); } return; }
+    if (e.target.closest("input,button,a,select,textarea,[contenteditable='true'],[contenteditable='plaintext-only'],.it-menu")) return;
+    const mid = mesaAtual();
+    if (S.ligando) {
+      e.preventDefault();
+      const id = itEl.dataset.it;
+      if (!S.ligando.de) { S.ligando.de = id; redesenharMesa(); }
+      else if (S.ligando.de !== id) { const m = clone(mesaDados(mid)); (m.linhas = m.linhas || []).push({ id: novoId("l"), de: S.ligando.de, para: id }); S.ligando = null; salvarMesa(mid, m, 0); render(); }
+      return;
+    }
+    e.preventDefault();
+    const r = itEl.getBoundingClientRect();
+    arrasto = { modo: "mover", id: itEl.dataset.it, el: itEl, area, x0: e.clientX, y0: e.clientY, dx: e.clientX - r.left, dy: e.clientY - r.top, mexeu: false, fantasma: null };
+  });
+  document.addEventListener("pointermove", e => {
+    if (!arrasto) return;
+    const dist = Math.hypot(e.clientX - arrasto.x0, e.clientY - arrasto.y0);
+    if (!arrasto.mexeu && dist < 5) return;
+    if (!arrasto.mexeu) {
+      arrasto.mexeu = true;
+      if (arrasto.modo === "mover") {
+        const f = arrasto.el.cloneNode(true); f.classList.add("fantasma-arrasto"); f.classList.remove("sel"); $$(".it-menu", f).forEach(x => x.remove());
+        f.style.width = arrasto.el.getBoundingClientRect().width + "px"; f.style.left = "0px"; f.style.top = "0px"; f.style.margin = "0";
+        document.body.appendChild(f); arrasto.fantasma = f; arrasto.el.style.opacity = ".3";
+      } else {
+        const f = document.createElement("div"); f.className = "fantasma-novo"; f.textContent = (FERRAMENTAS.find(x => x[0] === arrasto.tipo) || [])[1] || "Nova peça";
+        document.body.appendChild(f); arrasto.fantasma = f; arrasto.dx = 16; arrasto.dy = 14;
+      }
+    }
+    arrasto.fantasma.style.left = (e.clientX - arrasto.dx) + "px"; arrasto.fantasma.style.top = (e.clientY - arrasto.dy) + "px";
+    $$(".coluna.alvo").forEach(c => c.classList.remove("alvo"));
+    const col = colunaSob(e.clientX, e.clientY); if (col) col.classList.add("alvo");
+  });
+  function colunaSob(cx, cy) {
+    if (!arrasto) return null;
+    if (arrasto.modo === "mover") { const m = mesaDados(mesaAtual()); const it = itemPorId(m, arrasto.id); if (!it || it.tipo === "coluna") return null; }
+    if (arrasto.modo === "novo" && arrasto.tipo === "coluna") return null;
+    const els = document.elementsFromPoint(cx, cy);
+    for (const el of els) { const c = el.closest && el.closest(".coluna"); if (c && (!arrasto.el || c !== arrasto.el)) return c; }
+    return null;
+  }
+  document.addEventListener("pointerup", e => {
+    if (!arrasto) return;
+    const a = arrasto; arrasto = null;
+    if (a.fantasma) a.fantasma.remove();
+    const colEl = a.mexeu ? (() => { arrasto = a; const c = colunaSob(e.clientX, e.clientY); arrasto = null; return c; })() : null;
+    $$(".coluna.alvo").forEach(c => c.classList.remove("alvo"));
+    if (a.modo === "novo") {
+      const area = $(".mesa-area"); if (!area) return;
+      if (!a.mexeu) { const rol = $(".mesa-rolagem"); criarItem(a.tipo, rol.scrollLeft + rol.clientWidth / 2 - 110, rol.scrollTop + 80); return; }
+      const sob = document.elementFromPoint(e.clientX, e.clientY);
+      if (!sob || !sob.closest(".mesa-area")) return;
+      const [x, y] = pontoNaArea(area, e.clientX - 16, e.clientY - 14);
+      criarItem(a.tipo, x, y, colEl ? colEl.dataset.it : null);
+      return;
+    }
+    const mid = mesaAtual(); if (!mid) return;
+    if (!a.mexeu) { if (a.el) a.el.style.opacity = ""; if (S.sel !== a.id) { S.sel = a.id; S.selLinha = null; S.editandoForm = null; redesenharMesa(); } return; }
+    const m = clone(mesaDados(mid)); const it = itemPorId(m, a.id); if (!it) { redesenharMesa(); return; }
+    // tira da coluna antiga
+    if (it.col) { const velha = itemPorId(m, it.col); if (velha) velha.filhos = (velha.filhos || []).filter(f => f !== it.id); }
+    if (colEl && colEl.dataset.it !== it.id) {
+      const nova = itemPorId(m, colEl.dataset.it);
+      const corpo = $(".col-corpo", colEl); const irmaos = $$(":scope > [data-it]", corpo).filter(x => x.dataset.it !== it.id);
+      let idx = irmaos.findIndex(x => { const r = x.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; }); if (idx < 0) idx = irmaos.length;
+      const lista = (nova.filhos || []).filter(f => f !== it.id); lista.splice(idx, 0, it.id); nova.filhos = lista;
+      it.col = nova.id; delete it.x; delete it.y;
+    } else {
+      const [x, y] = pontoNaArea(a.area.isConnected ? a.area : $(".mesa-area"), e.clientX - a.dx, e.clientY - a.dy);
+      it.x = Math.max(0, Math.round(x)); it.y = Math.max(0, Math.round(y)); delete it.col;
+    }
+    S.sel = it.id; salvarMesa(mid, m, 0); redesenharMesa();
+  });
+  document.addEventListener("pointercancel", () => { if (arrasto && arrasto.fantasma) arrasto.fantasma.remove(); if (arrasto && arrasto.el) arrasto.el.style.opacity = ""; arrasto = null; });
+
+  // cliques dentro da mesa
+  document.addEventListener("click", e => {
+    const ferr = e.target.closest('.ferr[data-novo="linha"]');
+    if (ferr) { S.ligando = S.ligando ? null : { de: null }; S.sel = null; render(); return; }
+    const area = e.target.closest(".mesa-area"); if (!area) return;
+    const mid = mesaAtual();
+    const xl = e.target.closest("[data-apagar-linha]");
+    if (xl) { const m = clone(mesaDados(mid)); m.linhas = (m.linhas || []).filter(l => l.id !== xl.dataset.apagarLinha); S.selLinha = null; salvarMesa(mid, m, 0); redesenharMesa(); return; }
+    const bt = e.target.closest("[data-it-acao]"); if (!bt) return;
+    const id = bt.closest("[data-it]").dataset.it; const m = clone(mesaDados(mid)); const it = itemPorId(m, id); if (!it) return;
+    const acao = bt.dataset.itAcao;
+    if (acao === "apagar") return apagarItem(mid, id);
+    if (acao === "cor") { it.cor = bt.dataset.valor; salvarMesa(mid, m, 0); return redesenharMesa(); }
+    if (acao === "editar") { S.editandoForm = id; return redesenharMesa(); }
+    if (acao === "tarefa") { (it.itens = it.itens || []).push({ t: "", ok: false }); salvarMesa(mid, m, 0); redesenharMesa(); const eds = $$(`[data-it="${id}"] [data-edita^="itens."]`); if (eds.length) editar(eds[eds.length - 1]); return; }
+    if (acao === "okForm") {
+      $$(`[data-it="${id}"] [data-form]`).forEach(inp => { it[inp.dataset.form] = inp.value.trim(); });
+      if (it.tipo === "link" && it.url && !/^https?:\/\//i.test(it.url)) it.url = "https://" + it.url;
+      S.editandoForm = null; salvarMesa(mid, m, 0); return redesenharMesa();
+    }
+    if (acao === "arquivo") { const f = $("#arquivo-imagem"); f.dataset.item = id; f.click(); }
+  });
+  document.addEventListener("dblclick", e => {
+    const area = e.target.closest(".mesa-area"); if (!area || S.ligando) return;
+    const ed = e.target.closest("[data-edita]");
+    if (ed) { e.preventDefault(); editar(ed); return; }
+    if (e.target.closest("[data-it]")) return;
+    const [x, y] = pontoNaArea(area, e.clientX - 20, e.clientY - 16);
+    criarItem("nota", x, y);
+  });
+  document.addEventListener("change", e => {
+    const area = e.target.closest(".mesa-area"); if (!area) return;
+    const mid = mesaAtual(); const itEl = e.target.closest("[data-it]"); if (!itEl) return;
+    const m = clone(mesaDados(mid)); const it = itemPorId(m, itEl.dataset.it); if (!it) return;
+    if (e.target.matches("[data-tarefa]")) { const t = it.itens[Number(e.target.dataset.tarefa)]; if (t) t.ok = e.target.checked; salvarMesa(mid, m, 0); redesenharMesa(); }
+    if (e.target.matches("[data-cor]")) { it.hex = e.target.value; salvarMesa(mid, m, 0); redesenharMesa(); }
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      if (document.activeElement && document.activeElement.isContentEditable) { document.activeElement.blur(); return; }
+      if (S.ligando || S.sel || S.selLinha) { S.ligando = null; S.sel = null; S.selLinha = null; S.editandoForm = null; render(); }
+      return;
+    }
+    if ((e.key === "Delete" || e.key === "Backspace") && !ocupado() && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) {
+      const mid = mesaAtual(); if (!mid) return;
+      if (S.sel) { e.preventDefault(); apagarItem(mid, S.sel); }
+      else if (S.selLinha) { e.preventDefault(); const m = clone(mesaDados(mid)); m.linhas = (m.linhas || []).filter(l => l.id !== S.selLinha); S.selLinha = null; salvarMesa(mid, m, 0); redesenharMesa(); }
+    }
+    if (e.key === "Enter" && e.target.matches && e.target.matches("[data-form]")) { e.preventDefault(); const ok = e.target.closest("[data-it]").querySelector('[data-it-acao="okForm"]'); if (ok) ok.click(); }
+  });
+  $("#arquivo-imagem").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0]; const id = e.target.dataset.item; e.target.value = "";
+    if (!f || !assets || !id) return;
+    mostrar("Enviando a imagem…");
+    try {
+      const r = await assets.upload(f);
+      const mid = mesaAtual(); const m = clone(mesaDados(mid)); const it = itemPorId(m, id); if (!it) return;
+      it.src = r.url; it.asset = r.id; S.editandoForm = null; salvarMesa(mid, m, 0); redesenharMesa(); mostrar("Imagem na mesa");
+    } catch (err) { mostrar("Não consegui enviar a imagem. Tente um arquivo menor que 20 MB."); }
+  });
+  window.addEventListener("resize", () => { const r = $(".mesa"); if (r) desenharLinhas($(".mesa-area", r), mesaDados(r.dataset.mesa)); });
+
+  // ---------- ajustes: sincronização e instalação ----------
+  function telaAjustes() {
+    const st = { "sem-chave": ["erro", "Ainda não conectado. Tudo fica salvo só neste aparelho."], offline: ["andamento", "Sem internet agora. Tudo fica salvo no aparelho e sincroniza quando a conexão voltar."], sincronizando: ["andamento", "Sincronizando…"], erro: ["erro", erroSync || "Erro ao sincronizar."], ok: ["feito", "Sincronizado " + haQuanto(ultimaSync) + "."], parado: ["andamento", "Esperando a primeira sincronização."] }[estadoSync] || ["andamento", ""];
+    return `<header class="topo"><div class="topo-esq"><a class="voltar" href="#inicio" aria-label="Voltar">${ICONE.voltar}</a><div><div class="trilha">FluxoEDITÁ</div><h1 class="titulo">Ajustes</h1></div></div></header>
+    <div class="chapa pontos"><div class="duas"><div class="principal">
+      <section class="papel rot" aria-label="Sincronização">
+        <div class="rot-cab"><b style="font:700 18px var(--f-titulo);flex:1">Sincronização</b><span class="chip ${st[0] === "feito" ? "publicado" : st[0] === "erro" ? "gravacao" : "roteiro"}">${st[0] === "feito" ? "ligada" : st[0] === "erro" ? "atenção" : "aguardando"}</span></div>
+        <p style="margin:0">${esc(st[1])}</p>
+        <p class="sub" style="margin:0">Seus dados ficam no repositório privado <b>${esc(cfg.dono)}/${esc(cfg.repo)}</b>. O Mac e o celular sincronizam por ele, e o Roteirista e o Editor também leem e escrevem ali.</p>
+        <label class="etq" for="cfg-token" style="color:#6B6862;margin-top:6px">Chave de acesso do GitHub</label>
+        <input id="cfg-token" class="broll" type="password" autocomplete="off" spellcheck="false" placeholder="${cfg.token ? "Chave salva neste aparelho" : "Cole aqui a chave que começa com github_pat_"}" style="background:#fff;border:1px solid #DCD7CD">
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <button class="btn prim" data-acao="salvarChave">Salvar e sincronizar</button>
+          <button class="btn" style="color:var(--papel-tinta);background:var(--papel-2);border-color:#DCD7CD" data-acao="sincronizarAgora" ${cfg.token ? "" : "disabled"}>Sincronizar agora</button>
+          ${cfg.token ? `<button class="btn fantasma" style="color:var(--vermelho-esc);border-color:#DCD7CD" data-acao="tirarChave">Tirar a chave deste aparelho</button>` : ""}
+        </div>
+      </section>
+      <section class="papel rot" aria-label="Como criar a chave">
+        <b style="font:700 17px var(--f-titulo)">Como criar a chave (uma vez só)</b>
+        <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;line-height:1.5">
+          <li>Abra <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="color:var(--vermelho-esc)">github.com/settings/personal-access-tokens/new</a> logado na conta <b>${esc(cfg.dono)}</b>.</li>
+          <li>Em <b>Token name</b>, escreva <b>FluxoEDITÁ</b>. Em <b>Expiration</b>, escolha a validade mais longa.</li>
+          <li>Em <b>Repository access</b>, marque <b>Only select repositories</b> e escolha <b>${esc(cfg.repo)}</b>.</li>
+          <li>Em <b>Permissions › Repository permissions</b>, ache <b>Contents</b> e troque pra <b>Read and write</b>.</li>
+          <li>Clique em <b>Generate token</b>, copie a chave e cole no campo acima. Use a mesma chave no celular e no Mac.</li>
+        </ol>
+        <span class="sub">A chave fica guardada só no seu aparelho e serve apenas pra essa pasta privada.</span>
+      </section>
+    </div><aside class="aside">
+      <section class="caixa-escura"><span class="etq">Instalar no iPhone</span>
+        <span>No Safari, abra este endereço, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.</span>
+        <span class="sub" style="color:var(--texto-3)">Depois de instalado, ele abre e funciona sem internet.</span></section>
+      <section class="caixa-escura"><span class="etq">No Mac</span>
+        <span>Use o app <b>FluxoEDITÁ</b> do Mac. Se preferir pelo navegador: no Safari, <b>Arquivo › Adicionar ao Dock</b>.</span></section>
+      <section class="caixa-escura"><span class="etq">Cópia de segurança</span>
+        <span>Baixa um arquivo com todos os seus blocos, vídeos e mesas.</span>
+        <button class="btn" data-acao="exportar">Baixar cópia (.json)</button></section>
+    </aside></div></div>`;
+  }
+  Object.assign(acoes, {
+    salvarChave: () => {
+      const v = ($("#cfg-token").value || "").trim();
+      if (!v && !cfg.token) { mostrar("Cole a chave do GitHub primeiro"); return; }
+      if (v) cfg.token = v;
+      guardarAgora(); estadoSync = "parado"; render(); sincronizar(true);
+    },
+    sincronizarAgora: () => sincronizar(true),
+    tirarChave: () => { cfg.token = ""; guardarAgora(); estadoSync = "sem-chave"; render(); mostrar("Chave tirada deste aparelho"); },
+    exportar: () => {
+      const blob = new Blob([JSON.stringify({ versao: 1, exportado: agora(), colecoes: Object.fromEntries(COLECOES.map(c => [c, S[c]])) }, null, 1)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "fluxoedita-" + hoje() + ".json"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    },
+  });
+
+  // ---------- início ----------
+  function iniciar() {
+    const est = lerLocal();
+    if (est && est.colecoes) { COLECOES.forEach(c => { S[c] = est.colecoes[c] || {}; }); apagados = est.apagados || {}; ultimaSync = est.ultimaSync || null; mudouDesdeSync = !!est.mudouDesdeSync; }
+    if (est && est.cfg) cfg = { ...CFG_PADRAO, ...est.cfg };
+    modo = "local"; COLECOES.forEach(c => S.carregou.add(c));
+    estadoSync = cfg.token ? "parado" : "sem-chave";
+    render();
+    sincronizar();
+    setInterval(() => { if (document.visibilityState === "visible") sincronizar(); else atualizarSalvo(); }, 60000);
+    setInterval(atualizarSalvo, 30000);
+    window.addEventListener("online", () => sincronizar());
+    window.addEventListener("offline", () => { estadoSync = cfg.token ? "offline" : "sem-chave"; atualizarSalvo(); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") sincronizar(); else { guardarAgora(); if (mudouDesdeSync) sincronizar(); } });
+    window.addEventListener("pagehide", guardarAgora);
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => { });
+  }
+  iniciar();
+})();
+</script>
+</body>
+</html>
