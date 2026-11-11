@@ -19,6 +19,9 @@
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
 body{margin:0}
+/* no app do Mac os botões da janela ficam por cima do topo da barra lateral */
+.mac #lado{padding-top:44px}
+.mac .topo{padding-top:22px}
 /* Layout: casca escura de estúdio (lateral + topo) e, no meio, o painel de furinhos onde os cartões de papel ficam pregados. */
 :root{
   --tinta:#0E0E10; --painel:#151518; --cartao:#1B1B1F; --cartao-2:#232327; --linha:#2A2A2F;
@@ -1200,6 +1203,7 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--vermelho);flex:no
 
   // ---------- início ----------
   function iniciar() {
+    if (window.FLUXO_MAC) document.documentElement.classList.add("mac");
     const est = lerLocal();
     if (est && est.colecoes) { COLECOES.forEach(c => { S[c] = est.colecoes[c] || {}; }); apagados = est.apagados || {}; ultimaSync = est.ultimaSync || null; mudouDesdeSync = !!est.mudouDesdeSync; }
     if (est && est.cfg) cfg = { ...CFG_PADRAO, ...est.cfg };
